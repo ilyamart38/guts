@@ -1,0 +1,8 @@
+<h1>{{ mgs.Title }}</h1>
+<ul>
+{% for campus in mgs.campus_set.all %}
+    <li><a href="{% url 'campus' mgs.id campus.id %}">{{ campus.Title }}</a></li>
+    <!-- <li><a href="/network/{{ mgs.id }}/{{ campus.id }}/">{{ campus.Title }}</a></li> -->
+{% endfor %}
+</ul>
+

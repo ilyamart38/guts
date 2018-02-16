@@ -1,0 +1,18 @@
+{% if mgs_list %}
+    <table>
+        <tbody>
+            <tr>
+                    <th>МГС</th>
+                    <th>Адрес</th>
+            </tr>
+            {% for mgs in mgs_list %}
+            <tr>
+                    <td><a href="{% url 'mgs' mgs.id %}">{{ mgs.Title }}</a></td>
+                    <td>{{ mgs.Address }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>Не создано ни одной МГС!</p>
+{% endif %}
