@@ -1,8 +1,44 @@
-<h1>{{ mgs.Title }}</h1>
-<ul>
-{% for campus in mgs.campus_set.all %}
-    <li><a href="{% url 'campus' mgs.id campus.id %}">{{ campus.Title }}</a></li>
-    <!-- <li><a href="/network/{{ mgs.id }}/{{ campus.id }}/">{{ campus.Title }}</a></li> -->
-{% endfor %}
-</ul>
+{% extends "__base.html" %}
+
+{% block content %}
+	<div class="container-fluid text-center">
+		<div class="row content">
+			<div class="col-sm-2 sidenav">
+				<table>
+					<tr>
+						<td><a href="{% url 'mgs' mgs.id %}">{{ mgs }}</a></td>
+						<td></td>
+					</tr>
+				{% for campus in mgs.campus_set.all %}
+					<tr>
+						<td></td>
+						<td><a href="{% url 'campus' campus.id %}">{{ campus.title }}</a>
+						</td>
+					</tr>
+				{% endfor %}
+				</table>
+			</div>
+			<div class="col-sm-8 text-left">
+				<h1>{{ mgs.title }} </h1>
+				<ul>
+				{% for campus in mgs.campus_set.all %}
+					<li><a href="{% url 'campus' campus.id %}">{{ campus.title }} </a></li>
+					<!--<ul>
+					{% for thread in campus.thread_set.all %}
+						<li> {{ thread.title }}
+					{% endfor %}
+					</ul>-->
+				{% endfor %}
+				</ul>
+			</div>
+			<div class="col-sm-2 sidenav">
+				<div class="well">
+					<p>ADS</p>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+
 

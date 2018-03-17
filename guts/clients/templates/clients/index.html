@@ -1,0 +1,28 @@
+{% extends "__base.html" %}
+
+{% block content %}
+	<div class="container-fluid text-center">
+		<div class="row content">
+			<div class="col-sm-2 sidenav">
+			</div>
+			<div class="col-sm-8 text-left">
+				{% if clients_list %}
+					<table>
+						<tbody>
+							{% for client in clients_list %}
+							<tr>
+									<td><a href="{% url 'cliens' client.id %}">{{ client.name }}</a></td>
+									<td>{{ mgs.address }}</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				{% else %}
+					<p>В базе нет ни одного Клиента!</p>
+				{% endif %}
+			</div>
+			<div class="col-sm-2 sidenav">
+			</div>
+		</div>
+	</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+.campus_table table{
+	width: 100%;
+	border: 1px solid rgb(2, 2, 2);
+	border-collapse: collapse;
+}
+.campus_table table tr th{
+	border: 2px solid rgb(2, 2, 2);
+	font-weight: bold;
+}
+.campus_table table tr td{
+	border: 1px solid rgb(2, 2, 2);
+}
+
+.thread_table table{
+	margin-top: -1px;
+	margin-left: -1px;
+	border-collapse: collapse;
+	border: 2px solid white;
+}
+.thread_table table tr th{
+	border: 1px solid rgb(2, 2, 2);
+}

@@ -1,0 +1,28 @@
+{% extends "__base.html" %}
+
+{% block content %}
+	<div class="container-fluid text-center">
+		<div class="row content">
+			<div class="col-sm-2 sidenav">
+			</div>
+			<div class="col-sm-8 text-left">
+				{% if l2_services_list %}
+					<table>
+						<tbody>
+							{% for l2_services in l2_services_list %}
+							<tr>
+									<td><a href="{% url 'cliens' client.id %}">{{ l2_services.client }}</a></td>
+									<td>{{ l2_services.vpls }}</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				{% else %}
+					<p>В базе нет ни одного l2-Клиента!</p>
+				{% endif %}
+			</div>
+			<div class="col-sm-2 sidenav">
+			</div>
+		</div>
+	</div>
+{% endblock %}
