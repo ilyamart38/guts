@@ -1,0 +1,43 @@
+{% extends "__base.html" %}
+
+{% block left_col %}
+				<table >
+					<tr>
+						<th>
+
+						</th>
+						<td>
+						</td>
+					</tr>
+				{% for campus in mgs.campus_set.all %}
+					<tr>
+						<td>
+						</td>
+						<td>
+							<a href="{% url 'campus' campus.id %}">{{ campus.title }}</a>
+						</td>
+					</tr>
+				{% endfor %}
+				</table>
+{% endblock %}
+
+{% block content %}
+				<h1>{{ mgs.title }} </h1>
+				<div class = "container ">
+					<h2> Добавляем кампус </h2>
+					<form method="POST" class="post-form">{% csrf_token %}
+						{{ form.as_p }}
+						<button type="submit" class="save btn btn-default">Save</button>
+					</form>
+
+				</div>
+{% endblock %}
+
+{% block right_col %}
+				<div class="well">
+					<p>ADS</p>
+				</div>
+{% endblock %}
+
+
+

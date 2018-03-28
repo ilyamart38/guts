@@ -1,0 +1,3 @@
+# Для работы с ip адресами требуется SubnetTree
+pip install -e git+git://git.bro.org/pysubnettree.git#egg=pysubnettree
+

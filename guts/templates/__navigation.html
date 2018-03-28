@@ -1,40 +1,42 @@
-<div class="container-fluid">
-	<div class="navbar-header">
-		<a class="navbar-brand" href="/"><small>Конфиг</small>Генератор</a>
-    </div>
-	<ul class="nav navbar-nav">
-		<li {% if '/network' in request.path %}class="active"{% endif %}><a href="/network/">ГУТС</a></li>
-		<li {% if '/clients' in request.path %}class="active"{% endif %}><a href="/clients/">Клиенты</a></li>
-		<li {% if '/l2' in request.path %}class="active"{% endif %}><a href="/l2/">L2</a></li>
-		<li {% if '/ipoe' in request.path %}class="active"{% endif %}><a href="/ipoe/">IPoE</a></li>
-	</ul>
-	<ul class="nav navbar-nav navbar-right">
-			{% if user.is_authenticated %}
-				<li>
-					<a href=#>
-						<span class="glyphicon glyphicon-user"></span>{{ user.get_username }}
-					</a>
-				</li>
-				<li>
-					<a href="{% url 'password_reset'%}?next={{request.path}}">
-						<span class="glyphicon glyphicon-fire"></span> Сменить пароль
-					</a>
-				<li>
-					<a href="{% url 'logout'%}?next={{request.path}}">
-						<span class="glyphicon glyphicon-log-out"></span> Logout
-					</a>
-				</li>
-			{% else %}
-				<li>
-					<a href="{% url 'login'%}?next=/">
-						<span class="glyphicon glyphicon-log-in"></span> Login
-					</a>
-				</li>
-				<li>
-					<a href="#">
-						<span class="glyphicon glyphicon-certificate"> Sign Up</span>
-					</a>
-				</li>
-			{% endif %}
-	</ul>
-</div>
+<nav class="navbar navbar-default ">
+	<div class="container-fluid">
+		<div class="navbar-header">
+			<a class="navbar-brand" href="/"><small>Конфиг</small>Генератор</a>
+		</div>
+		<ul class="nav navbar-nav">
+			<li {% if '/network' in request.path %}class="active"{% endif %}><a href="/network/">ГУТС</a></li>
+			<li {% if '/clients' in request.path %}class="active"{% endif %}><a href="/clients/">Клиенты</a></li>
+			<li {% if '/l2' in request.path %}class="active"{% endif %}><a href="/l2/">L2</a></li>
+			<li {% if '/ipoe' in request.path %}class="active"{% endif %}><a href="/ipoe/">IPoE</a></li>
+		</ul>
+		<ul class="nav navbar-nav navbar-right">
+				{% if user.is_authenticated %}
+					<li>
+						<a href=#>
+							<span class="glyphicon glyphicon-user"></span>{{ user.get_username }}
+						</a>
+					</li>
+					<li>
+						<a href="{% url 'password_reset'%}?next={{request.path}}">
+							<span class="glyphicon glyphicon-fire"></span> Сменить пароль
+						</a>
+					<li>
+						<a href="{% url 'logout'%}?next={{request.path}}">
+							<span class="glyphicon glyphicon-log-out"></span> Logout
+						</a>
+					</li>
+				{% else %}
+					<li>
+						<a href="{% url 'login'%}?next=/">
+							<span class="glyphicon glyphicon-log-in"></span> Login
+						</a>
+					</li>
+					<li>
+						<a href="#">
+							<span class="glyphicon glyphicon-certificate"> Sign Up</span>
+						</a>
+					</li>
+				{% endif %}
+		</ul>
+	</div>
+</nav>

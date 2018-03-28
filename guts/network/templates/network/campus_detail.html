@@ -1,0 +1,96 @@
+{% extends "__base.html" %}
+{% load staticfiles %}
+<link rel="stylesheet" href="{% static 'network/css/network.css' %}">
+
+{% block left_col %}
+        <table>
+            {% for mgs_exmpl in mgs_list %}
+                <tr>
+                    <td>
+                        <a href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
+                    </td>
+                    <td>
+                    </td>
+                </tr>
+                {% if mgs_exmpl == campus.ms.mgs %}
+                    {% for ms in mgs_exmpl.ms_set.all %}
+                        {% for campus_exmpl in ms.campus_set.all %}
+                            <tr>
+                                <td>
+                                </td>
+                                <td {% if campus_exmpl == campus %} class="active" {% endif %}>
+                                    <a href="{% url 'campus' campus_exmpl.id %}">{{ campus_exmpl }}</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+        </table>
+{% endblock %}
+
+{% block content %}
+                <h1>{{ campus }} </h1>
+                    <table class='table'>
+                        <tr>
+                            <th>
+                                Нитка 
+                                <a href="{% url 'new_thread_in_campus' campus.id %}"><span class="glyphicon glyphicon-plus" title="Добавить нитку в {{ campus }}"></span></a>
+                                <br/>(outvlan/mapvlan)
+                            </th>
+                            <th width='80%'>Адреса</th>
+                        </tr>
+                        {% for thread in campus.thread_set.all %}
+                            <tr>
+                                <td rowspan="2" valign="top">
+                                    {{ thread }}
+                                    <a href="{% url 'thread_edit' thread.id %}"><span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить нитку {{ thread }}"></span></a>
+                                    <a href="{% url 'thread_delete' thread.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить нитку {{ thread }}"></span></a>
+                                    <br/>{{ thread.outvlan }}/{{ thread.mapvlan }}
+                                </td>
+                                <td>
+                                    nets:
+                                    {% for subnet in thread.subnet_set.all %}{{ subnet.network }}; 
+                                    {% endfor %} <a href="#"><span class="glyphicon glyphicon-plus" title="Добавить подсеть в нитку"></span></a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <table class="table small">
+                                    {% for access_node in thread.access_node_set.all %}
+                                        <thead>
+                                            <tr>
+                                                <th colspan = "2"> {{ access_node.address }}</th>
+                                            <tr>
+                                        </thead>
+                                        {% for access_switch in access_node.access_switch_set.all %}
+                                            <tr>
+                                                <td>{{ access_switch.ip }}</td>
+                                                <td>{{ access_switch.sw_model }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                            <tr>
+                                                <td>
+                                                    <a href="#"><span class="glyphicon glyphicon-plus" title="Добавить коммутатор для [{{ access_node.address }}]"></span></a>
+                                                </td>
+                                                <td></td>
+                                            </tr>
+                                    {% endfor %}
+                                        <tr>
+                                            <td colspan = "2">
+                                                <a href="#"><span class="glyphicon glyphicon-plus" title="Добавить узел"></span></a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+{% endblock %}
+
+
+{% block right_col %}
+                <div class="well">
+                    <p>ADS</p>
+                </div>
+{% endblock %}

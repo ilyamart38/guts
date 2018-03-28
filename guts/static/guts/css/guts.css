@@ -1,34 +1,86 @@
-    /* Remove the navbar's default margin-bottom and rounded borders */ 
-    .navbar {
-      margin-bottom: 0;
-      border-radius: 0;
-    }
-    
-    /* Set height of the grid so .sidenav can be 100% (adjust as needed) */
-    .row.content {height: 450px}
-    
-    /* Set gray background color and 100% height */
-    .sidenav {
-      padding-top: 20px;
-      /* background-color: #f1f1f1;*/
-      height: 100%;
-    }
-    
-	.sidenav table {
-		text-align: left; 
-	}
-    /* Set black background color, white text and some padding */
+body {margin:0;}
+
+.navbar {
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  border-radius: 0;
+}
+
+.navbar a {
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+
+.navbar a:hover {
+  background: #ddd;
+  color: black;
+}
+
+.main {
+  padding: 16px;
+  margin-top: 45px;
+}
+
+.col-sm-2 {
+	position: inherit
+}
+
+.col-sm-8 {
+	position: inherit
+}
     footer {
       background-color: #555;
       color: white;
       padding: 15px;
     }
+
+.row.content {
+	height: 100%
+	position: absolute;
+}
+
+.sidenav {
+      padding-top: 20px;
+      background-color: #f1f1f1;
+      height: 100%;
+      
+    }
+
+.sidenav a {
+    padding: 6px 8px 6px 16px;
+    text-decoration: none;
+    font-size: 14px;
+    color: #2196F3;
+    display: block;
+}
+
+.sidenav a:hover {
+    color: #064579;
+}
     
     /* On small screens, set height to 'auto' for sidenav and grid */
     @media screen and (max-width: 767px) {
       .sidenav {
-        height: auto;
+        height: 100%;
         padding: 15px;
       }
       .row.content {height:auto;} 
     }
+
+.glyphicon {
+    position: inherit;
+}
+
+.sidenav .active {
+    background-color: #c2c2d2;
+}
+.sidenav .active a{
+    color: #444466;
+}

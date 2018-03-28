@@ -1,0 +1,48 @@
+{% extends "__base.html" %}
+
+{% block title %} | Редактирование кампуса.{% endblock %}
+{% block left_col %}
+			{% if mgs %}
+				<table >
+					<tr>
+						<th>
+							<a href="{% url 'mgs' mgs.id %}">{{ mgs }}</a>
+						</th>
+						<td>
+						</td>
+					</tr>
+				{% for campus in mgs.campus_set.all %}
+					<tr>
+						<td>
+						</td>
+						<td>
+							<a href="{% url 'campus' campus.id %}">{{ campus.title }}</a>
+						</td>
+					</tr>
+				{% endfor %}
+				</table>
+			{% endif %}
+{% endblock %}
+
+{% block content %}
+			{% if user.is_authenticated %}
+				<div class = "container ">
+					<h2> Редактирование нитки</h2>
+					<form method="POST" class="post-form">{% csrf_token %}
+                        {% csrf_token %}
+						{{ form.as_p }}
+						<button type="submit" class="save btn btn-default">Save</button>
+					</form>
+
+				</div>
+			{% endif %}
+{% endblock %}
+
+{% block right_col %}
+				<div class="well">
+					<p>ADS</p>
+				</div>
+{% endblock %}
+
+
+

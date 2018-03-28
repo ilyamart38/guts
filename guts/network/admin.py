@@ -1,12 +1,13 @@
 from django.contrib import admin
 
 # Импортируем нужные классы для админки
-from .models import LAG, SAP, MGS, CAMPUS, THREAD, SUBNET, SW_MODEL, ACCESS_NODE, ACCESS_SWITCH, VENDORS
+from .models import LAG, SAP, MGS, MS, CAMPUS, THREAD, SUBNET, SW_MODEL, ACCESS_NODE, ACCESS_SWITCH, VENDORS
 
 admin.site.register(VENDORS)
 admin.site.register(LAG)
 admin.site.register(SAP)
 admin.site.register(MGS)
+admin.site.register(MS)
 admin.site.register(CAMPUS)
 admin.site.register(THREAD)
 admin.site.register(SUBNET)

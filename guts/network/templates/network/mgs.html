@@ -1,43 +1,92 @@
 {% extends "__base.html" %}
 
+{% block left_col %}
+        <table>
+            {% for mgs_exmpl in mgs_list %}
+                <tr {% if mgs == mgs_exmpl %} class="active" {% endif %}>
+                    <td>
+                        <a href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
+                    </td>
+                    <td>
+                    </td>
+                </tr>
+                {% if mgs == mgs_exmpl %}
+                    {% for ms in mgs_exmpl.ms_set.all %}
+                        {% for campus in ms.campus_set.all %}
+                            <tr>
+                                <td>
+                                </td>
+                                <td>
+                                    <a href="{% url 'campus' campus.id %}">{{ campus }}</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                {% endif %}
+			{% endfor %}
+		</table>
+{% endblock %}
+
 {% block content %}
-	<div class="container-fluid text-center">
-		<div class="row content">
-			<div class="col-sm-2 sidenav">
-				<table>
-					<tr>
-						<td><a href="{% url 'mgs' mgs.id %}">{{ mgs }}</a></td>
-						<td></td>
-					</tr>
-				{% for campus in mgs.campus_set.all %}
-					<tr>
-						<td></td>
-						<td><a href="{% url 'campus' campus.id %}">{{ campus.title }}</a>
-						</td>
-					</tr>
-				{% endfor %}
-				</table>
-			</div>
-			<div class="col-sm-8 text-left">
-				<h1>{{ mgs.title }} </h1>
-				<ul>
-				{% for campus in mgs.campus_set.all %}
-					<li><a href="{% url 'campus' campus.id %}">{{ campus.title }} </a></li>
-					<!--<ul>
-					{% for thread in campus.thread_set.all %}
-						<li> {{ thread.title }}
-					{% endfor %}
-					</ul>-->
-				{% endfor %}
-				</ul>
-			</div>
-			<div class="col-sm-2 sidenav">
+				<h1>{{ mgs }} </h1>
+					<table class='table'>
+						<tr>
+							<th>
+								Магистраль
+								<a href="{% url 'new_ms_in_mgs' mgs.id %}"><span class="glyphicon glyphicon-plus" title="Добавить новую магистраль в {{ mgs }}"></span>
+							</th>
+							<th></th>
+						</tr>
+						{% for ms in mgs.ms_set.all %}
+							<tr>
+								<td valign="top"> 
+									{{ ms }}
+									<a href="{% url 'ms_delete' ms.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить магистраль {{ ms }}"></span></a>
+								</td>
+								<td>
+									<table class="table small">
+										<tr>
+											<th>
+												Кампусы <a href="{% url 'new_campus_in_ms' mgs.id ms.id %}"><span class="glyphicon glyphicon-plus" title="Добавить новый кампус в {{ ms }}"></span></a>
+											</th>
+											<th>
+												Ниток в кампусе
+											</th>
+											<th>
+												Узлов в кампусе
+											</th>
+											<th>
+												Коммутаторов в кампусе
+											</th>
+										</tr>
+										{% for campus in ms.campus_set.all %}
+											<tr>
+												<td>
+													<a href="{% url 'campus' campus.id %}">{{ campus }} </a>
+													<a href="{% url 'campus_edit' campus.id %}"><span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить кампус"></span></a>
+													<a href="{% url 'campus_delete' campus.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить кампус"></span></a>
+												</td>
+												<td>{{ campus.thread_set.count }}</td>
+												<td>
+													{{ campus.access_node_count }}
+												</td>
+												<td>
+													{{ campus.access_sw_count }}
+												</td>
+											</tr>
+										{% endfor %}
+									</table>
+								</td>
+							</tr>
+						{% endfor %}
+					</table>
+				
+{% endblock %}
+
+{% block right_col %}
 				<div class="well">
 					<p>ADS</p>
 				</div>
-			</div>
-		</div>
-	</div>
 {% endblock %}
 
 
