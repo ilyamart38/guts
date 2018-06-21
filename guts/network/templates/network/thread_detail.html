@@ -3,29 +3,11 @@
 <link rel="stylesheet" href="{% static 'network/css/network.css' %}">
 
 {% block left_col %}
-				<table>
-					<tr>
-						<td colspan = "3"><a href="{% url 'mgs' thread.campus.mgs.id %}">{{ thread.campus.mgs }}</a></td>
-					</tr>
-					{% for campus in thread.campus.mgs.campus_set.all %}
-						<tr>
-							<td><td>
-							<td colspan = "2"><a href="{% url 'campus' campus.id %}">{{ campus }}</a></td>
-						</tr>
-						{% if campus == thread.campus %}
-							{% for thr in thread.campus.thread_set.all %}
-								<tr {% if thr == thread %}bgcolor="#cccccc"{% endif %}>
-									<td colspan = "2"><td>
-									<td><a href="{% url 'thread' thr.id %}">{{ thr }}</a></td>
-								</tr>
-							{% endfor %}
-						{% endif %}
-					{% endfor %}
-				</table>
+
 {% endblock %}
 
 {% block content %}
-				<h1>{{ thread.title }} </h1>
+				<h1>{{ thread }} </h1>
 
 {% endblock %}
 

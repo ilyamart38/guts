@@ -1,30 +1,15 @@
 {% extends "__base.html" %}
 
+{% block title %} | {{ mgs }}{% endblock %}
+
 {% block left_col %}
-        <table>
+        <ul class="nav-list list-group">
             {% for mgs_exmpl in mgs_list %}
-                <tr {% if mgs == mgs_exmpl %} class="active" {% endif %}>
-                    <td>
-                        <a href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
-                    </td>
-                    <td>
-                    </td>
-                </tr>
-                {% if mgs == mgs_exmpl %}
-                    {% for ms in mgs_exmpl.ms_set.all %}
-                        {% for campus in ms.campus_set.all %}
-                            <tr>
-                                <td>
-                                </td>
-                                <td>
-                                    <a href="{% url 'campus' campus.id %}">{{ campus }}</a>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    {% endfor %}
-                {% endif %}
-			{% endfor %}
-		</table>
+                <li class="list-group-item">
+                    <a {% if mgs == mgs_exmpl %} class="active" {% endif %} href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
+                </li>
+            {% endfor %}
+        </ul>
 {% endblock %}
 
 {% block content %}

@@ -1,0 +1,90 @@
+{% extends "__base.html" %}
+{% load staticfiles %}
+<link rel="stylesheet" href="{% static 'network/css/network.css' %}">
+
+{% block left_col %}
+        <ul class="nav-list list-group">
+            {% for mgs_exmpl in mgs_list %}
+                <li class="list-group-item">
+                    <a href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
+                    {% if mgs_exmpl == subnet.thread.campus.ms.mgs %}
+                        <ul class="nav-list list-group">
+                        {% for ms in mgs_exmpl.ms_set.all %}
+                            {% for campus_exmpl in ms.campus_set.all %}
+                                <li class="list-group-item">
+                                    <a href="{% url 'campus' campus_exmpl.id %}">{{ campus_exmpl }}</a>
+                                    {% if campus_exmpl ==  subnet.thread.campus %}
+                                        <ul class="nav-list">
+                                        {% for thread_exmpl in campus_exmpl.thread_set.all %}
+                                            <li>
+                                                {{ thread_exmpl }}
+                                                {% if thread_exmpl == subnet.thread %}
+                                                    <ul class="nav-list">
+                                                    {% for subnet_exmpl in thread_exmpl.subnet_set.all %}
+                                                        <li>
+                                                            <a {% if subnet_exmpl == subnet %} class="active" {% endif %} href="{% url 'subnet' subnet_exmpl.id %}">{{ subnet_exmpl }}</a>
+                                                        </li>
+                                                    {% endfor %}
+                                                    </ul>
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                        </ul>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+{% endblock %}
+
+{% block content %}
+                <table>
+                    <tr>
+                        <td>
+                            <h1>
+                                {{ subnet }}
+                            </h1>
+                        </td>
+                        <td>
+                            <a href="{% url 'subnet_delete' subnet.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить подсеть {{ subnet }}"></span></a>
+                        </td>
+                    </tr>
+                </table>
+                <table class='table'>
+                        <tr>
+                            <th>
+                                IP-адрес
+                            </th>
+                            <th>
+                                Адрес
+                            </th>
+                            <th>
+                                Модель
+                            </th>
+                        </tr>
+                        {% for sw in sw_list %}
+                        <tr>
+                            <td>
+                                {{ sw.ip }}
+                            </td>
+                            <td>
+                                {{ sw.access_node }}
+                            </td>
+                            <td>
+                                {{ sw.sw_model }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                </table>
+{% endblock %}
+
+
+{% block right_col %}
+                <div class="well">
+                    <p>ADS</p>
+                </div>
+{% endblock %}

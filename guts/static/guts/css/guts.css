@@ -46,6 +46,10 @@ body {margin:0;}
 	position: absolute;
 }
 
+.list-group-item{
+	position: inherit;
+}
+
 .sidenav {
       padding-top: 20px;
       background-color: #f1f1f1;
@@ -83,4 +87,9 @@ body {margin:0;}
 }
 .sidenav .active a{
     color: #444466;
+}
+
+.clickable
+{
+    cursor: pointer;
 }

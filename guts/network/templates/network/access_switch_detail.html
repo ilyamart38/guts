@@ -1,0 +1,121 @@
+{% extends "__base.html" %}
+
+{% block title %} | Настройка коммутатора {{ access_switch }} {% endblock %}
+
+{% block left_col %}
+        <ul class="nav-list list-group">
+            {% for mgs_exmpl in mgs_list %}
+                <li class="list-group-item">
+                    <a href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
+                    {% if mgs_exmpl == access_switch.access_node.thread.campus.ms.mgs %}
+                        <ul class="nav-list list-group">
+                        {% for ms in mgs_exmpl.ms_set.all %}
+                            {% for campus_exmpl in ms.campus_set.all %}
+                                <li class=" list-group-item">
+                                    <a {% if campus_exmpl ==  access_switch.access_node.thread.campus %} class="active" {% endif %} href="{% url 'campus' campus_exmpl.id %}">{{ campus_exmpl }}</a>
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+{% endblock %}
+
+{% block content %}
+    <h1>
+        {{ access_switch }}
+        <a href="{% url 'access_switch_delete' access_switch.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить коммутатор {{ access_switch }}"></span></a>
+    </h1>
+    <table>
+        <tr>
+            <td>
+                ip: {{ access_switch.ip }}
+            </td>
+            <td>
+                gd: 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                model: {{ access_switch.sw_model }}
+            </td>
+            <td>
+                ext.vlan/map-vlan: 
+            </td>
+        </tr>
+    </table>
+    
+    
+    <a href="{% url 'access_switch_mdoel' access_switch.id %}"><span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить модель коммутатора '{{ access_switch }}'"></span></a>
+    <form method="POST" class="post-form">
+        {% csrf_token %}
+        {{ form_set.management_form }}
+        <table class='table table-bordered'>
+            <tr>
+                <th>
+                    Порт
+                </th>
+                <th>
+                    Тип порта
+                </th>
+                <th>
+                    Описание
+                </th>
+                <th>
+                    Untag-vlan/PVID
+                </th>
+                <th>
+                    Tag vlans
+                </th>
+            </tr>
+            {% for form in form_set %}
+                <tr class='port_type_{{ form.port_type.value }}'>
+                    <td>
+                        {{ form.num_in_switch.error }}
+                        {{ form.port_name.value }}
+                        {{ form.port_name.as_hidden }}
+                        {{ form.num_in_switch.as_hidden }}
+                        {{ form.id.as_hidden }}
+                        {{ form.access_switch.as_hidden }}
+                    </td>
+                    <td>
+                        <select name='{{ form.port_type.html_name }}'>
+                            {% for port_type in port_types %}
+                                <option value='{{ port_type.id }}' {% if port_type.id == form.port_type.value %} selected {% endif %} style='background-color: {{ port_type.color }};'> {{ port_type.title }} </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        {{ form.description.error }}
+                        {{ form.description }}
+                    </td>
+                    <td>
+                        {{ form.u_vlan.error }}
+                        {{ form.u_vlan }}
+                    </td>
+                    <td>
+                        {{ form.t_vlans.error }}
+                        {{ form.t_vlans }}
+                    </td>
+                </tr>
+                {% if form.errors %}
+                    <tr>
+                        <td colspan=8>
+                            {{ form.errors }}
+                        </td>
+                    </tr>
+                {% endif %}
+                
+            {% endfor %}
+        </table>
+        <button type="submit" class="save btn btn-default">Save</button>
+    </form>
+{% endblock %}
+
+{% block right_col %}
+{% endblock %}
+
+
+

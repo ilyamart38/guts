@@ -1,0 +1,57 @@
+{% extends "__base.html" %}
+
+{% block title %} | Удаление узла сети доступа.{% endblock %}
+{% block left_col %}
+    {% if mgs_list %}
+        <ul class="nav-list list-group">
+        {% for mgs in mgs_list %}
+            <li class="list-group-item">
+                <a href="{% url 'mgs' mgs.id %}">{{ mgs }}</a>
+                {% if mgs == access_node.thread.campus.ms.mgs %}
+                    <ul class="nav-list list-group">
+                    {% for ms in mgs.ms_set.all %}
+                        {% for campus in ms.campus_set.all %}
+                            <li class="list-group-item">
+                                <a href="{% url 'campus' campus.id %}">{{ campus }}</a>
+                                    {% if campus ==  access_node.thread.campus %}
+                                        <ul class="nav-list">
+                                        {% for thread_exmpl in campus.thread_set.all %}
+                                            <li {% if thread_exmpl == access_node.thread %} class="active" {% endif %}>
+                                                {{ thread_exmpl }}
+                                            </li>
+                                        {% endfor %}
+                                        </ul>
+                                    {% endif %}
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+			{% if user.is_authenticated %}
+				<div class = "container ">
+					<h2> Удаление узла сети доступа!</h2>
+                    <p>Вы действительно желаете удалить узел доступа: {{ access_node }}?</p>
+					<form method="POST" class="post-form">{% csrf_token %}
+                        {% csrf_token %}
+						<button type="submit" class="save btn btn-default">Удалить!</button>
+					</form>
+
+				</div>
+			{% endif %}
+{% endblock %}
+
+{% block right_col %}
+				<div class="well">
+					<p>ADS</p>
+				</div>
+{% endblock %}
+
+
+

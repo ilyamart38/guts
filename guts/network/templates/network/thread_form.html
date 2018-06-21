@@ -1,33 +1,32 @@
 {% extends "__base.html" %}
 
-{% block title %} | Редактирование кампуса.{% endblock %}
+{% block title %} | Редактирование нитки {{ thread }}.{% endblock %}
+
 {% block left_col %}
-			{% if mgs %}
-				<table >
-					<tr>
-						<th>
-							<a href="{% url 'mgs' mgs.id %}">{{ mgs }}</a>
-						</th>
-						<td>
-						</td>
-					</tr>
-				{% for campus in mgs.campus_set.all %}
-					<tr>
-						<td>
-						</td>
-						<td>
-							<a href="{% url 'campus' campus.id %}">{{ campus.title }}</a>
-						</td>
-					</tr>
-				{% endfor %}
-				</table>
-			{% endif %}
+        <ul class="nav-list list-group">
+            {% for mgs_exmpl in mgs_list %}
+                <li class="list-group-item">
+                    <a href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
+                    {% if mgs_exmpl == thread.campus.ms.mgs %}
+                        <ul class="nav-list list-group">
+                        {% for ms in mgs_exmpl.ms_set.all %}
+                            {% for campus_exmpl in ms.campus_set.all %}
+                                <li class=" list-group-item">
+                                    <a {% if campus_exmpl ==  thread.campus %} class="active" {% endif %} href="{% url 'campus' campus_exmpl.id %}">{{ campus_exmpl }}</a>
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
 {% endblock %}
 
 {% block content %}
 			{% if user.is_authenticated %}
 				<div class = "container ">
-					<h2> Редактирование нитки</h2>
+					<h2> Редактирование нитки {{ thread }}</h2>
 					<form method="POST" class="post-form">{% csrf_token %}
                         {% csrf_token %}
 						{{ form.as_p }}

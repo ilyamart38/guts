@@ -1,26 +1,17 @@
 {% extends "__base.html" %}
 
-{% block title %} | Редактирование кампуса.{% endblock %}
+{% block title %} | Удаление магистрали!{% endblock %}
+
 {% block left_col %}
-				<table >
-					<tr>
-						<th>
-							<a href="{% url 'mgs' ms.mgs.id %}">{{ ms.mgs }}</a>
-						</th>
-						<td>
-						</td>
-					</tr>
-				{% for campus in ms.mgs.campus_set.all %}
-					<tr>
-						<td>
-						</td>
-						<td>
-							<a href="{% url 'campus' campus.id %}">{{ ms }}</a>
-						</td>
-					</tr>
-				{% endfor %}
-				</table>
+        <ul class="nav-list list-group">
+            {% for mgs_exmpl in mgs_list %}
+                <li class="list-group-item">
+                    <a {% if mgs_exmpl ==  ms.mgs %} class="active" {% endif %} href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
+                </li>
+            {% endfor %}
+        </ul>
 {% endblock %}
+
 
 {% block content %}
 			{% if user.is_authenticated %}

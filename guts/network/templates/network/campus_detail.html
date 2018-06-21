@@ -2,31 +2,27 @@
 {% load staticfiles %}
 <link rel="stylesheet" href="{% static 'network/css/network.css' %}">
 
+{% block title %} | {{ campus }}{% endblock %}
+
 {% block left_col %}
-        <table>
+        <ul class="nav-list list-group">
             {% for mgs_exmpl in mgs_list %}
-                <tr>
-                    <td>
-                        <a href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
-                    </td>
-                    <td>
-                    </td>
-                </tr>
-                {% if mgs_exmpl == campus.ms.mgs %}
-                    {% for ms in mgs_exmpl.ms_set.all %}
-                        {% for campus_exmpl in ms.campus_set.all %}
-                            <tr>
-                                <td>
-                                </td>
-                                <td {% if campus_exmpl == campus %} class="active" {% endif %}>
-                                    <a href="{% url 'campus' campus_exmpl.id %}">{{ campus_exmpl }}</a>
-                                </td>
-                            </tr>
+                <li class="list-group-item">
+                    <a href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
+                    {% if mgs_exmpl == campus.ms.mgs %}
+                        <ul class="nav-list list-group">
+                        {% for ms in mgs_exmpl.ms_set.all %}
+                            {% for campus_exmpl in ms.campus_set.all %}
+                                <li class=" list-group-item">
+                                    <a {% if campus_exmpl ==  campus %} class="active" {% endif %} href="{% url 'campus' campus_exmpl.id %}">{{ campus_exmpl }}</a>
+                                </li>
+                            {% endfor %}
                         {% endfor %}
-                    {% endfor %}
-                {% endif %}
+                        </ul>
+                    {% endif %}
+                </li>
             {% endfor %}
-        </table>
+        </ul>
 {% endblock %}
 
 {% block content %}
@@ -36,49 +32,56 @@
                             <th>
                                 Нитка 
                                 <a href="{% url 'new_thread_in_campus' campus.id %}"><span class="glyphicon glyphicon-plus" title="Добавить нитку в {{ campus }}"></span></a>
-                                <br/>(outvlan/mapvlan)
                             </th>
                             <th width='80%'>Адреса</th>
                         </tr>
                         {% for thread in campus.thread_set.all %}
                             <tr>
-                                <td rowspan="2" valign="top">
-                                    {{ thread }}
+                                <td valign="top">
+                                    <b>{{ thread }}</b>
                                     <a href="{% url 'thread_edit' thread.id %}"><span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить нитку {{ thread }}"></span></a>
                                     <a href="{% url 'thread_delete' thread.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить нитку {{ thread }}"></span></a>
-                                    <br/>{{ thread.outvlan }}/{{ thread.mapvlan }}
+                                    <br/>outvlan:{{ thread.outvlan }}
+                                    <br/>maptvlan:{{ thread.mapvlan }}
+                                    <br/>nets:
+                                    {% for subnet in thread.subnet_set.all %}
+                                        <br/><a href="{% url 'subnet' subnet.id %}">{{ subnet.network }}</a>; 
+                                    {% endfor %} 
+                                    <br><a href="{% url 'new_net_in_thread' thread.id %}"><span class="glyphicon glyphicon-plus" title="Добавить подсеть в нитку"></span></a>
                                 </td>
-                                <td>
-                                    nets:
-                                    {% for subnet in thread.subnet_set.all %}{{ subnet.network }}; 
-                                    {% endfor %} <a href="#"><span class="glyphicon glyphicon-plus" title="Добавить подсеть в нитку"></span></a>
-                                </td>
-                            </tr>
-                            <tr>
                                 <td>
                                     <table class="table small">
                                     {% for access_node in thread.access_node_set.all %}
                                         <thead>
                                             <tr>
-                                                <th colspan = "2"> {{ access_node.address }}</th>
+                                                <th colspan = "2"> 
+                                                    {{ access_node.address }}
+                                                    <a href="{% url 'access_node_edit' access_node.id %}"><span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить узел '{{ access_node }}'"></span></a>
+                                                    <a href="{% url 'access_node_delete' access_node.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить узел {{ access_node }}"></span></a>
+                                                </th>
                                             <tr>
                                         </thead>
                                         {% for access_switch in access_node.access_switch_set.all %}
                                             <tr>
-                                                <td>{{ access_switch.ip }}</td>
-                                                <td>{{ access_switch.sw_model }}</td>
+                                                <td>
+                                                    <a href="{% url 'access_switch' access_switch.id %}">{{ access_switch }}</a>
+                                                    <a href="{% url 'access_switch_delete' access_switch.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить коммутатор {{ access_switch }}"></span></a>                                                </td>
+                                                <td>
+                                                    {{ access_switch.sw_model }}
+                                                    <a href="{% url 'access_switch_mdoel' access_switch.id %}"><span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить модель коммутатора '{{ access_switch }}'"></span></a>
+                                                </td>
                                             </tr>
                                         {% endfor %}
                                             <tr>
                                                 <td>
-                                                    <a href="#"><span class="glyphicon glyphicon-plus" title="Добавить коммутатор для [{{ access_node.address }}]"></span></a>
+                                                    <a href="{% url 'new_access_switch_in_node' access_node.id %}"  title="Добавить коммутатор для [{{ access_node.address }}]"><i class="material-icons">drag_handle</i></a>
                                                 </td>
                                                 <td></td>
                                             </tr>
                                     {% endfor %}
                                         <tr>
                                             <td colspan = "2">
-                                                <a href="#"><span class="glyphicon glyphicon-plus" title="Добавить узел"></span></a>
+                                                <a href="{% url 'new_access_node_in_thread' thread.id %}"><span class="glyphicon glyphicon-home" title="Добавить узел"></span></a>
                                             </td>
                                         </tr>
                                     </table>
@@ -90,7 +93,5 @@
 
 
 {% block right_col %}
-                <div class="well">
-                    <p>ADS</p>
-                </div>
+
 {% endblock %}

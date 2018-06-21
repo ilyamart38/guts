@@ -1,0 +1,46 @@
+{% extends "__base.html" %}
+
+{% block title %} | Удаление подсети.{% endblock %}
+{% block left_col %}
+				<table >
+					<tr>
+						<th>
+							<a href="{% url 'mgs' subnet.thread.campus.ms.mgs.id %}">{{ subnet.thread.campus.ms.mgs }}</a>
+						</th>
+						<td>
+						</td>
+					</tr>
+				{% for campus in subnet.thread.campus.ms.mgs.campus_set.all %}
+					<tr>
+						<td>
+						</td>
+						<td>
+							<a href="{% url 'campus' campus.id %}">{{ campus }}</a>
+						</td>
+					</tr>
+				{% endfor %}
+				</table>
+{% endblock %}
+
+{% block content %}
+			{% if user.is_authenticated %}
+				<div class = "container ">
+					<h2> Удаление подсети!</h2>
+                    <p>Вы действительно желаете удалить подсеть: {{ subnet }}?</p>
+					<form method="POST" class="post-form">{% csrf_token %}
+                        {% csrf_token %}
+						<button type="submit" class="save btn btn-default">Удалить!</button>
+					</form>
+
+				</div>
+			{% endif %}
+{% endblock %}
+
+{% block right_col %}
+				<div class="well">
+					<p>ADS</p>
+				</div>
+{% endblock %}
+
+
+

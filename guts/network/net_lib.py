@@ -1,3 +1,6 @@
+from django.core.exceptions import ValidationError
+import re
+
 # проверка соответствия номера МС концепции
 # Концептуально МС не может превышать 8
 def check_concept_ms(ms_num):
@@ -47,4 +50,87 @@ def calculation_outvlan(mgs_num, ms_num, campus_num, thread_num):
 		vlan = 224 * mgs_num + 32 * ms_num + 4 * campus_num + thread_num + 440
 		return vlan;
 	else:
-		return False
+		return None
+
+# вычисление концептуальной подсети для нитки
+def calculation_subnet(mgs_num, ms_num, campus_num, thread_num):
+    if check_concept_ms(ms_num) and check_concept_campus(campus_num) and check_concept_tread(thread_num):
+        magic_octet = 225
+        magic_octet_2 = 201
+        # Проверяем не является ли 9-м в магистрале
+        if (campus_num == 9):
+            campus_num = ms_num
+            ms_num = 7
+        
+        # сеть
+        net=((((4096 * mgs_num) + (512 * ms_num)) + (64 * campus_num))) - 4688
+        # собираем ip
+        a=10
+        tmp=((net + thread_num * 16) / 256)
+        
+        if mgs_num < 16:
+            b = magic_octet
+            c = 16 + int(tmp)
+        elif mgs_num < 20:
+            b = magic_octet_2
+            c = -176 + int(tmp);
+        d = (net + thread_num * 16)%256
+        return "%i.%i.%i.%i/28" % (a, b, c, d)
+    else:
+        return None
+
+# преобразование интервала в список
+def interval_to_arr(interval = ''):
+	# например "1-3,5-8,11,14-16" -> [1,2,3,5,6,7,8,11,14,15,16]
+	arr = []
+	if interval != '':
+		for elem_interval in interval.split(','):
+			petern_interval = "^(([1-9])|([1-9][0-9])|([1-9][0-9][0-9]))|((([1-9])|([1-9][0-9])|([1-9][0-9][0-9]))-(([1-9])|([1-9][0-9])|([1-9][0-9][0-9])))$"
+			if re.search(petern_interval, elem_interval) is not None:
+				tmp = elem_interval.split('-')
+				start_interval = tmp[0]
+				if len(tmp)>1:
+					end_interval = tmp[1]
+				else:
+					end_interval = start_interval
+				if start_interval <= end_interval:
+					for i in range(int(start_interval), int(end_interval)+1):
+						if i not in arr:
+							arr.append(i)
+				else:
+					raise ValidationError("ERROR!!!: (%s) Элемент интервала <%s> не корректен!!!" % (interval, elem_interval))
+					return []
+			else:
+				raise ValidationError("ERROR!!!: Элемент интервала %s не корректен!!!" % elem_interval)
+                    
+	return arr
+
+def arr_to_interval(arr = []):
+	# процедура, преобразующая числовую последовательность в интервал
+	# например [1,2,3,5,6,7,8,11,14,15,16] -> "1-3,5-8,11,14-16"
+	if len(arr)>0:
+		#arr.sort()
+		arr = sorted(arr)
+		rezult = str(arr[0])
+		start_interval = arr[0]
+		for key in range(len(arr)):
+			if key == 0:
+				continue
+			elif arr[key]-arr[key-1]>1:
+				if arr[key-1] != start_interval:
+					rezult = "%s-%s,%s" % (rezult, str(arr[key-1]), str(arr[key]))
+				else:
+					rezult = "%s,%s" % (rezult, str(arr[key]))
+				start_interval = arr[key]
+			elif key == len(arr)-1:
+				if arr[key]-arr[key-1]>1:
+					if arr[key-1] != start_interval:
+						rezult = "%s-%s,%s" % (rezult, str(arr[key-1]), str(arr[key]))
+					else:
+						rezult = "%s,%s" % (rezult, str(arr[key]))
+				else:
+					rezult = rezult + "-" + str(arr[key])
+		return rezult
+	else:
+		return ''
+

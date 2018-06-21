@@ -1,0 +1,435 @@
+{% extends "__base.html" %}
+
+{% block title %} | Редактирование/создание узла доступа.{% endblock %}
+{% block left_col %}
+    {% if mgs_list %}
+        <ul class="nav-list list-group">
+        {% for mgs in mgs_list %}
+            <li class="list-group-item">
+                <a href="{% url 'mgs' mgs.id %}">{{ mgs }}</a>
+                {% if mgs == campus.ms.mgs %}
+                    <ul class="nav-list list-group">
+                    {% for ms in mgs.ms_set.all %}
+                        {% for cmp in ms.campus_set.all %}
+                            <li class="list-group-item">
+                                <a href="{% url 'campus' cmp.id %}" {% if cmp == campus %} class="active" {% endif %}>{{ cmp }}</a>
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}
+
+
+{% block content %}
+				<h1>Настройка коммутатора '{{ access_switch }}' </h1>
+                <div class="alert alert-danger">
+                    <p>При изменении модели данного коммутатора, могут быть изменены настройки существующих портов.
+                </div>
+                <div class="panel panel-warning autocollapse">
+                    <div class="panel-heading clickable">
+                        <h3 class="panel-title">
+                            Если в устанавливаемой модели коммутатора портов меньше чем в текущей модели, лишние порты будут удалены, а настройки портов, используемых поумолчанию для аплинков, и порты отводов, будут изменены!
+                        </h3>
+                    </div>
+                    <div class="panel-body">
+                        <table class="table table-bordered">
+                            <tr>
+                                <th>
+                                    Номер порта.
+                                </th>
+                                <th>
+                                    Тип порта до изменений.
+                                    <br>(D-Link DES-1228/ME B1)
+                                </th>
+                                <th>
+                                    ->
+                                </th>
+                                <th>
+                                    Тип порта после изменений.
+                                    <br>(D-Link DES-3200-10 C1)
+                                </th>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>1</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>2</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>3</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>4</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>5</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>6</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>7</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>8</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#faebcc">
+                                <td>9</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Магистральный порт</td>
+                            </tr>
+                            <tr bgcolor="#faebcc">
+                                <td>10</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Магистральный порт</td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>11</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>12</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>13</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>14</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>15</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>16</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>17</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>18</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>19</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>20</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>21</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>22</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>23</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>24</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>25</td>
+                                <td>Распределительный порт</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>26</td>
+                                <td>Распределительный порт</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>27</td>
+                                <td>Магистральный порт</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr bgcolor="#ebccd1">
+                                <td>28</td>
+                                <td>Магистральный порт</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                </div>
+                <div class="panel panel-warning autocollapse">
+                    <div class="panel-heading clickable">
+                        <h3 class="panel-title">
+                            Если портов в устанавливаемой модели больше то текущие порты, используемые для аплинков, и отводов, будут изменены на настройки в соответствии с используемой моделью!
+                        </h3>
+                    </div>
+                    <div class="panel-body">
+                        <table class="table table-bordered">
+                            <tr>
+                                <th>
+                                    Номер порта.
+                                </th>
+                                <th>
+                                    Тип порта до изменений.
+                                    <br>(D-Link DES-3200-10 C1)
+                                </th>
+                                <th>
+                                    ->
+                                </th>
+                                <th>
+                                    Тип порта после изменений.
+                                    <br>(D-Link DES-1228/ME B1)
+                                </th>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>1</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>2</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>3</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>4</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>5</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>6</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>7</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#d6e9c6">
+                                <td>8</td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#faebcc">
+                                <td>9</td>
+                                <td>0-Магистральный порт</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#faebcc">
+                                <td>10</td>
+                                <td>0-Магистральный порт</td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>11</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>12</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>13</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>14</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>15</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>16</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>17</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>18</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>19</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>20</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>21</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>22</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>23</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>24</td>
+                                <td></td>
+                                <td></td>
+                                <td>Абонентский порт (PPPoE-клиент)</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>25</td>
+                                <td></td>
+                                <td></td>
+                                <td>Распределительный порт</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>26</td>
+                                <td></td>
+                                <td></td>
+                                <td>Распределительный порт</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>27</td>
+                                <td></td>
+                                <td></td>
+                                <td>Магистральный порт</td>
+                            </tr>
+                            <tr bgcolor="#bce8f1">
+                                <td>28</td>
+                                <td></td>
+                                <td></td>
+                                <td>Магистральный порт</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <p> Текущая модель коммутатора: {{ access_switch.sw_model }}
+                <form method="POST" class="post-form">{% csrf_token %}
+                    {{ form }}
+                    <button type="submit" class="save btn btn-default">Save</button>
+                </form>
+{% endblock %}
+
+{% block right_col %}
+{% endblock %}
+
+
+

@@ -26,10 +26,34 @@ urlpatterns = [
     
     # адрес для представления нитки: /network/5/1/
     url(r'^thread/(?P<pk>[0-9]+)/$',                                                        views.ThreadView.as_view(),         name='thread'),
-    # адрес для редактирования нитки: /network/thread/1/edit
-    url(r'^thread/(?P<pk>[0-9]+)/edit/$',                                                   views.ThreadUpdate.as_view(),       name='thread_edit'),
-    # адрес для удаления кампуса: /network/thread/1/delete/
-    url(r'^thread/(?P<pk>[0-9]+)/delete/$',                                                 views.ThreadDelete.as_view(),       name='thread_delete'),
     # адрес для добавления нитки в кампусе: /network/campus/1/new_thread
     url(r'^campus/(?P<campus_id>[0-9]+)/new_thread/$',                                      views.NewThreadInCampus,            name='new_thread_in_campus'),
-]
+    # адрес для редактирования нитки: /network/thread/1/edit
+    url(r'^thread/(?P<pk>[0-9]+)/edit/$',                                                   views.ThreadUpdate.as_view(),       name='thread_edit'),
+    # адрес для удаления нитки: /network/thread/1/delete/
+    url(r'^thread/(?P<pk>[0-9]+)/delete/$',                                                 views.ThreadDelete.as_view(),       name='thread_delete'),
+
+    # адрес для представления подсети: /network/subnet/1/
+    url(r'^subnetnet/(?P<pk>[0-9]+)/$',                                                     views.SubnetView.as_view(),         name='subnet'),
+    # адрес для добавления подсети в нитку: /network/thread/1/new_net
+    url(r'^thread/(?P<thread_id>[0-9]+)/new_net/$',                                         views.SubnetInThread,               name='new_net_in_thread'),
+    # адрес для удаления подсети: /network/subnet/1/delete/
+    url(r'^subnet/(?P<pk>[0-9]+)/delete/$',                                                 views.SubnetDelete.as_view(),       name='subnet_delete'),
+
+    # адрес для добавления узла в нитку: /network/thread/1/new_node
+    url(r'^thread/(?P<thread_id>[0-9]+)/new_access_node/$',                                 views.NewAccessNodeInThread,            name='new_access_node_in_thread'),
+    # адрес для редактирования узла доступа: /network/access_node/1/edit
+    url(r'^access_node/(?P<pk>[0-9]+)/edit/$',                                              views.AccessNodeUpdate.as_view(),       name='access_node_edit'),
+    # адрес для удаления узла доступа: /network/access_node/1/delete/
+    url(r'^access_node/(?P<pk>[0-9]+)/delete/$',                                            views.AccessNodeDelete.as_view(),       name='access_node_delete'),
+
+    # адрес для добавления коммутатора в ноду: /network/access_node/1/new_access_switch
+    url(r'^access_node/(?P<access_node_id>[0-9]+)/new_access_switch/$',                     views.NewAccessSwitchInNode,            name='new_access_switch_in_node'),
+    # адрес для представления коммутатора доступа: /access_switch/5/
+    url(r'^access_switch/(?P<pk>[0-9]+)/$',                                                 views.AccessSwitchView.as_view(),         name='access_switch'),
+    # адрес для удаления коммутатора доступа: /network/access_switch/1/delete/
+    url(r'^access_switch/(?P<pk>[0-9]+)/delete/$',                                            views.AccessSwitchDelete.as_view(),       name='access_switch_delete'),
+    # адрес для изменения модели коммутатора доступа: /network/access_switch/1/change_model/
+    url(r'^access_switch/(?P<pk>[0-9]+)/change_model/$',                                            views.AccessSwitchModel.as_view(),       name='access_switch_mdoel'),
+
+    ]
