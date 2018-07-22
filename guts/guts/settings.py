@@ -134,3 +134,12 @@ STATIC_URL = '/static/'
 LOGIN_REDIRECT_URL = '/'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+GUTS_CONSTANTS = {
+    'TFTP_IP_LOCAL' : '10.111.31.11',
+    'TFTP_IP_REMOTE' : '109.194.16.10',
+    'EQM_IP' : '109.194.16.25',
+    'ADMIN_PROXY_IP' : '109.194.16.10',
+    'NS2_IP' : '109.194.16.4',
+    'NS4_IP' : '109.194.17.5',
+}

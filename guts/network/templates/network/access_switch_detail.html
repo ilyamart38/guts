@@ -2,58 +2,55 @@
 
 {% block title %} | Настройка коммутатора {{ access_switch }} {% endblock %}
 
-{% block left_col %}
-        <ul class="nav-list list-group">
-            {% for mgs_exmpl in mgs_list %}
-                <li class="list-group-item">
-                    <a href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
-                    {% if mgs_exmpl == access_switch.access_node.thread.campus.ms.mgs %}
-                        <ul class="nav-list list-group">
-                        {% for ms in mgs_exmpl.ms_set.all %}
-                            {% for campus_exmpl in ms.campus_set.all %}
-                                <li class=" list-group-item">
-                                    <a {% if campus_exmpl ==  access_switch.access_node.thread.campus %} class="active" {% endif %} href="{% url 'campus' campus_exmpl.id %}">{{ campus_exmpl }}</a>
-                                </li>
-                            {% endfor %}
-                        {% endfor %}
-                        </ul>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-{% endblock %}
-
 {% block content %}
-    <h1>
-        {{ access_switch }}
-        <a href="{% url 'access_switch_delete' access_switch.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить коммутатор {{ access_switch }}"></span></a>
-    </h1>
     <table>
         <tr>
             <td>
-                ip: {{ access_switch.ip }}
+                <h1>
+                    {{ access_switch }}
+                </h1>
             </td>
             <td>
-                gd: 
-            </td>
-        </tr>
-        <tr>
-            <td>
-                model: {{ access_switch.sw_model }}
-            </td>
-            <td>
-                ext.vlan/map-vlan: 
+                <a href="{% url 'access_switch_delete' access_switch.id %}"> <span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить коммутатор {{ access_switch }}"></span></a>
             </td>
         </tr>
     </table>
-    
-    
-    <a href="{% url 'access_switch_mdoel' access_switch.id %}"><span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить модель коммутатора '{{ access_switch }}'"></span></a>
+    <table class='table' >
+        <tr>
+            <td class='td_var'>
+                ip:
+            </td>
+            <td class='td_val'>
+                {{ access_switch.ip }}
+            </td>
+            <td class='td_var'>
+                gw:
+            </td>
+            <td class='td_val'>
+                {{ access_switch.gw }}
+            </td>
+        </tr>
+        <tr>
+            <td class='td_var'>
+                model:
+            </td>
+            <td class='td_val'>
+                {{ access_switch.sw_model }}
+                <a href="{% url 'access_switch_mdoel' access_switch.id %}"> <span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить модель коммутатора '{{ access_switch }}'"></span></a>
+            </td>
+            <td class='td_var'>
+                out/map: 
+            </td>
+            <td class='td_val'>
+                {{ access_switch.access_node.thread.outvlan }}/{{ access_switch.access_node.thread.mapvlan }}
+            </td>
+        </tr>
+    </table>
     <form method="POST" class="post-form">
         {% csrf_token %}
         {{ form_set.management_form }}
-        <table class='table table-bordered'>
-            <tr>
+        <table class='table table-bordered table-hover table-condensed'>
+            <tr class='active'>
                 <th>
                     Порт
                 </th>
@@ -115,6 +112,9 @@
 {% endblock %}
 
 {% block right_col %}
+    <div>
+        <a href="{% url 'access_switch_cfg_gen' access_switch.id %}"> <i class="fa fa-file-code-o" style="font-size:18px"></i> Генерация конфигурации</span></a>
+    </div>
 {% endblock %}
 
 

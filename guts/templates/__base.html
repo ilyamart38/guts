@@ -1,20 +1,23 @@
 {% load staticfiles %}
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Генератор 2.0{% block title %}{% endblock %}</title>
+    <head>
+        <title>Генератор 2.0{% block title %}{% endblock %}</title>
 
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-		<link rel="stylesheet" href="{% static 'guts/css/guts.css' %}">
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <link rel="stylesheet" href="{% static 'guts/css/guts.css' %}">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
         <link href="//netdna.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
         <script src="//netdna.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
         <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
-	</head>
-	<body>
+        
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    </head>
+    <body>
         <script type="text/javascript">
             $(document).on('click', '.panel div.clickable', function (e) {
                 var $this = $(this); //Heading
@@ -37,25 +40,26 @@
                 $found.removeClass($classy);
             });
         </script>        
-		{% include "__navigation.html" %}
-		<div class="main">
-			<div class="container-fluid">
-				<div class="row content">
-					<div class="col-sm-2 sidenav">
-						{% block left_col %} {% endblock %}
-					</div>
-					<div class="col-sm-8 text-left">
-						{% block content %} {% endblock %} 
-					</div>
-					<div class="col-sm-2 ">
-						{% block right_col %}
-						{% endblock %}
-					</div>
-				</div>
-			</div>
-		</div>
-		<footer class="container-fluid  text-right">
-			<p><small>({{ num_visits }})</small></p>
-		</footer>
-	</body>
+        {% include "__navigation.html" %}
+        <div class="main">
+            <div class="container-fluid">
+                <div class="row content">
+                    <div class="col-sm-2 sidenav">
+                        {% include "__left_menu.html" %}
+                        <!-- {% block left_col %} {% endblock %} -->
+                    </div>
+                    <div class="col-sm-8 text-left">
+                        {% block content %} {% endblock %} 
+                    </div>
+                    <div class="col-sm-2 ">
+                        {% block right_col %}
+                        {% endblock %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer class="container-fluid  text-right">
+            <p><small>({{ num_visits }})</small></p>
+        </footer>
+    </body>
 </html>

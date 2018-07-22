@@ -11,7 +11,9 @@
 								Адресс
 							</th>
 							<th>
-								Количество кампусов в МГС
+                                <i class="fa fa-codepen" style="font-size:24px" title='Кампусы'></i>/
+                                <i class="fa fa-bank" style="font-size:24px" title='Узлы доступа'></i>/
+                                <i class="fa fa-server" style="font-size:24px" title='Коммутвторы'></i>
 							</th>
 						</tr>
 						{% for mgs in mgs_list %}
@@ -23,7 +25,9 @@
 									{{ mgs.address }}
 								</td>
 								<td>
-									{{ mgs.campus_set.all.count }}
+									<tt class="fa fa-codepen" title='Кампусы в {{ mgs }}'> {{ mgs.campus_count }}</tt>/
+                                    <tt class="fa fa-bank" title='Узлы доступав {{ mgs }}'> {{ mgs.access_node_count }}</tt>/
+                                    <tt class="fa fa-server" title='Коммутвторыв {{ mgs }}'> {{ mgs.access_sw_count }}</tt>
 								</td>
 							</tr>
 						{% endfor %}

@@ -1,45 +1,25 @@
 {% extends "__base.html" %}
 
 {% block title %} | Редактирование кампуса.{% endblock %}
-{% block left_col %}
-				<table >
-					<tr>
-						<th>
-							<a href="{% url 'mgs' thread.campus.ms.mgs.id %}">{{ thread.campus.ms.mgs }}</a>
-						</th>
-						<td>
-						</td>
-					</tr>
-				{% for campus in thread.campus.ms.mgs.campus_set.all %}
-					<tr>
-						<td>
-						</td>
-						<td>
-							<a href="{% url 'campus' campus.id %}">{{ campus }}</a>
-						</td>
-					</tr>
-				{% endfor %}
-				</table>
-{% endblock %}
 
 {% block content %}
-			{% if user.is_authenticated %}
-				<div class = "container ">
-					<h2> Удаление нитки!</h2>
+            {% if user.is_authenticated %}
+                <div class = "container ">
+                    <h2> Удаление нитки!</h2>
                     <p>Вы действительно желаете удалить нитку: {{ thread }}?</p>
-					<form method="POST" class="post-form">{% csrf_token %}
+                    <form method="POST" class="post-form">{% csrf_token %}
                         {% csrf_token %}
-						<button type="submit" class="save btn btn-default">Удалить!</button>
-					</form>
+                        <button type="submit" class="save btn btn-default">Удалить!</button>
+                    </form>
 
-				</div>
-			{% endif %}
+                </div>
+            {% endif %}
 {% endblock %}
 
 {% block right_col %}
-				<div class="well">
-					<p>ADS</p>
-				</div>
+                <div class="well">
+                    <p>ADS</p>
+                </div>
 {% endblock %}
 
 

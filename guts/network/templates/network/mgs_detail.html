@@ -2,16 +2,6 @@
 
 {% block title %} | {{ mgs }}{% endblock %}
 
-{% block left_col %}
-        <ul class="nav-list list-group">
-            {% for mgs_exmpl in mgs_list %}
-                <li class="list-group-item">
-                    <a {% if mgs == mgs_exmpl %} class="active" {% endif %} href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
-                </li>
-            {% endfor %}
-        </ul>
-{% endblock %}
-
 {% block content %}
 				<h1>{{ mgs }} </h1>
 					<table class='table'>
@@ -69,9 +59,9 @@
 {% endblock %}
 
 {% block right_col %}
-				<div class="well">
-					<p>ADS</p>
-				</div>
+    <div class="well">
+        <p></p>
+    </div>
 {% endblock %}
 
 

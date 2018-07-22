@@ -1,0 +1,138 @@
+{% if access_switch %}
+    {% if mgs_list %}
+        <ul class="nav-list list-group">
+            {% for mgs_exmpl in mgs_list %}
+                <li class="list-group-item">
+                    <a href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
+                    {% if mgs_exmpl == access_switch.access_node.thread.campus.ms.mgs %}
+                        <ul class="nav-list list-group">
+                        {% for ms in mgs_exmpl.ms_set.all %}
+                            {% for campus_exmpl in ms.campus_set.all %}
+                                <li class=" list-group-item">
+                                    <a {% if campus_exmpl ==  access_switch.access_node.thread.campus %} class="active" {% endif %} href="{% url 'campus' campus_exmpl.id %}">{{ campus_exmpl }}</a>
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% elif access_node %}
+    {% if mgs_list %}
+        <ul class="nav-list list-group">
+        {% for mgs in mgs_list %}
+            <li class="list-group-item">
+                <a href="{% url 'mgs' mgs.id %}">{{ mgs }}</a>
+                {% if mgs == access_node.thread.campus.ms.mgs %}
+                    <ul class="nav-list list-group">
+                    {% for ms in mgs.ms_set.all %}
+                        {% for campus in ms.campus_set.all %}
+                            <li class="list-group-item">
+                                <a {% if campus ==  access_node.thread.campus %} class="active" {% endif %}href="{% url 'campus' campus.id %}">{{ campus }}</a>
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+{% elif subnet %}
+    {% if mgs_list %}
+        <ul class="nav-list list-group">
+        {% for mgs in mgs_list %}
+            <li class="list-group-item">
+                <a href="{% url 'mgs' mgs.id %}">{{ mgs }}</a>
+                {% if mgs == subnet.thread.campus.ms.mgs %}
+                    <ul class="nav-list list-group">
+                    {% for ms in mgs.ms_set.all %}
+                        {% for campus in ms.campus_set.all %}
+                            <li class="list-group-item">
+                                <a {% if campus ==  subnet.thread.campus %} class="active" {% endif %}href="{% url 'campus' campus.id %}">{{ campus }}</a>
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    {% endif %}    
+{% elif thread %}
+    {% if mgs_list %}
+        <ul class="nav-list list-group">
+        {% for mgs in mgs_list %}
+            <li class="list-group-item">
+                <a href="{% url 'mgs' mgs.id %}">{{ mgs }}</a>
+                {% if mgs == thread.campus.ms.mgs %}
+                    <ul class="nav-list list-group">
+                    {% for ms in mgs.ms_set.all %}
+                        {% for campus in ms.campus_set.all %}
+                            <li class="list-group-item">
+                                <a {% if campus ==  thread.campus %} class="active" {% endif %}href="{% url 'campus' campus.id %}">{{ campus }}</a>
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    {% endif %}    
+{% elif campus %}
+    {% if mgs_list %}
+        <ul class="nav-list list-group">
+        {% for mgs in mgs_list %}
+            <li class="list-group-item">
+                <a href="{% url 'mgs' mgs.id %}">{{ mgs }}</a>
+                {% if mgs == campus.ms.mgs %}
+                    <ul class="nav-list list-group">
+                    {% for ms in mgs.ms_set.all %}
+                        {% for cur_campus in ms.campus_set.all %}
+                            <li class="list-group-item">
+                                <a {% if cur_campus ==  campus %} class="active" {% endif %}href="{% url 'campus' cur_campus.id %}">{{ cur_campus }}</a>
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    {% endif %}    
+{% elif ms %}
+    {% if mgs_list %}
+        <ul class="nav-list list-group">
+        {% for mgs in mgs_list %}
+            <li class="list-group-item">
+                <a {% if mgs == ms.mgs %} class="active" {% endif %} href="{% url 'mgs' mgs.id %}">{{ mgs }}</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% endif %}    
+{% elif mgs %}
+    {% if mgs_list %}
+        <ul class="nav-list list-group">
+        {% for cur_mgs in mgs_list %}
+            <li class="list-group-item">
+                <a {% if cur_mgs == mgs %} class="active" {% endif %} href="{% url 'mgs' cur_mgs.id %}">{{ cur_mgs }}</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% endif %}    
+{% comment %}
+{% else %}
+    {% if mgs_list %}
+        <ul class="nav-list list-group">
+            {% for mgs_exmpl in mgs_list %}
+                <li class="list-group-item">
+                    <a href="{% url 'mgs' mgs_exmpl.id %}">{{ mgs_exmpl }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endcomment %}
+{% endif %}

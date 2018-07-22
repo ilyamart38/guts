@@ -26,7 +26,16 @@
 {% endblock %}
 
 {% block content %}
-                <h1>{{ campus }} </h1>
+                <table>
+                    <tr>
+                        <td>
+                            <h1>{{ campus }}</h1>
+                        </td>
+                        <td>
+                            <a href="{% url 'campus_delete' campus.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить кампус {{ campus }}"></span></a>
+                        </td>
+                    </tr>
+                </table>
                     <table class='table'>
                         <tr>
                             <th>
@@ -45,7 +54,9 @@
                                     <br/>maptvlan:{{ thread.mapvlan }}
                                     <br/>nets:
                                     {% for subnet in thread.subnet_set.all %}
-                                        <br/><a href="{% url 'subnet' subnet.id %}">{{ subnet.network }}</a>; 
+                                        <br/>
+                                        <a href="{% url 'subnet' subnet.id %}">{{ subnet.network }}</a>
+                                        <a href="{% url 'subnet_delete' subnet.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить подсеть {{ subnet }}"></span></a>;
                                     {% endfor %} 
                                     <br><a href="{% url 'new_net_in_thread' thread.id %}"><span class="glyphicon glyphicon-plus" title="Добавить подсеть в нитку"></span></a>
                                 </td>

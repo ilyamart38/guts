@@ -8,9 +8,9 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from django.forms import widgets, modelformset_factory
+from django import forms
 
-from .forms import Ms_Form, Campus_Form, Thread_Form, SubnetInThread_Form, Node_Form, New_Access_Switch_Form, Ports_Of_Acess_Switch_Formset
+from .forms import Ms_Form, Campus_Form, SubnetInThread_Form, New_Access_Switch_Form, Ports_Of_Acess_Switch_Formset
 from . import net_lib
 
 # Класс заглавного представления приложения
@@ -52,58 +52,34 @@ class CampusView(LoginRequiredMixin, generic.DetailView):
 class ThreadView(LoginRequiredMixin, generic.DetailView):
     model = THREAD
 
-@login_required
-def NewCampusInMs(request, mgs_id, ms_id):
-    mgs = MGS.objects.get(id=mgs_id)
-    ms = MS.objects.get(id=ms_id)
-    if request.method == 'POST':
-        form = Campus_Form(request.POST)
-        if form.is_valid():
-            campus = form.save(commit=False)
-            campus.save()
-            # если создается новый кампус и это ППК, то сразу в ППК создаем четыре нитки
-            # если создается МКУ, то добавляем только одну нитку
-            if campus.prefix == 'ppk':
-                threads_count = 4
-            elif campus.prefix == 'mku':
-                threads_count = 1
-            for num_in_campus in range(1,threads_count+1):
-                thread = THREAD(campus=campus, num_in_campus=num_in_campus)
-                outvlan = net_lib.calculation_outvlan(campus.ms.mgs.mgs_num, campus.ms.num_in_mgs, campus.num_in_ms, num_in_campus)
-                if outvlan:
-                    thread.outvlan = outvlan
-                mapvlan = net_lib.calculation_mapvlan(campus.ms.num_in_mgs, campus.num_in_ms, num_in_campus)
-                if mapvlan:
-                    thread.mapvlan = mapvlan
-                thread.save()
-                # для каждой нитки сразу расчитываем концептуальную подсеть 
-                thread_num = thread.num_in_campus
-                campus_num = campus.num_in_ms
-                ms_num = ms.num_in_mgs
-                mgs_num = mgs.mgs_num
-                network = net_lib.calculation_subnet(mgs_num, ms_num, campus_num, thread_num)
-                if network:
-                    subnet = SUBNET(network=network, thread=thread)
-                    subnet.save()
-                
-            return redirect('mgs', pk=mgs.id)
-    else:
+# класс для создания нового кампуса в текущей МС
+class NewCampusInMs(LoginRequiredMixin, CreateView):
+    model = CAMPUS
+    fields = ['prefix', 'ms', 'num_in_ms']
+    
+    # определяем начальные значения формы:
+    def get_initial(self):
+        ms_id = self.kwargs['ms_id']
+        ms = MS.objects.get(id=ms_id)
+        # Вычисляем первый свободный номер кампуса
         num_in_ms=1
         while CAMPUS.objects.filter(num_in_ms=num_in_ms, ms = ms):
             num_in_ms += 1
-        form = Campus_Form(initial = {'ms': ms_id, 'num_in_ms': num_in_ms})
-        form.mgs = mgs_id
-    return render(request, 'network/campus_form.html', {'form': form})
+        
+        return{
+            'ms' : ms_id,
+            'num_in_ms' : num_in_ms
+        }
+    
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['mgs_list'] = MGS.objects.all()
+        return context
 
 # Клас представления для изменения настроек кампуса
 class CampusUpdate(LoginRequiredMixin, UpdateView):
     model = CAMPUS
     fields = ('prefix', 'ms', 'num_in_ms')
-
-# Клас представления для создания кампуса
-class CampusCreate(LoginRequiredMixin, CreateView):
-    model = CAMPUS
-    fields = ('ms', 'num_in_ms')
 
 # Клас представления для удаления кампуса
 class CampusDelete(LoginRequiredMixin, DeleteView):
@@ -119,22 +95,38 @@ class CampusDelete(LoginRequiredMixin, DeleteView):
 
         return HttpResponseRedirect(reverse('mgs', kwargs={'pk': mgs_id}))
 
-# процедура создания новой МС в текущей МГС
-@login_required
-def NewMsInMgs(request, mgs_id):
-    mgs = MGS.objects.get(id=mgs_id)
-    if request.method == 'POST':
-        form = Ms_Form(request.POST)
-        if form.is_valid():
-            ms = form.save(commit=False)
-            ms.save()
-            return redirect('mgs', pk=mgs.id)
-    else:
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        campus_id = self.kwargs['pk']
+        context['campus'] = CAMPUS.objects.get(id = campus_id)
+        context['mgs_list'] = MGS.objects.all()
+        return context
+
+# класс для создания новой МС в текущей МГС
+class NewMsInMgs(LoginRequiredMixin, CreateView):
+    model = MS
+    fields = ['mgs', 'num_in_mgs',]
+    
+    # определяем начальные значения формы:
+    def get_initial(self):
+        mgs_id = self.kwargs['mgs_id']
+        mgs = MGS.objects.get(id = mgs_id)
+        # Вычисляем первый свободный номер МС
         num_in_mgs=1
         while MS.objects.filter(mgs=mgs, num_in_mgs=num_in_mgs):
             num_in_mgs += 1
-        form = Ms_Form(initial = {'mgs': mgs_id, 'num_in_mgs': num_in_mgs})
-    return render(request, 'network/ms_form.html', {'form': form, 'mgs_list':MGS.objects.all()})
+        
+        return{
+            'mgs' : mgs_id,
+            'num_in_mgs' : num_in_mgs
+        }
+    
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        mgs_id = self.kwargs['mgs_id']
+        context['mgs'] = MGS.objects.get(id = mgs_id)
+        context['mgs_list'] = MGS.objects.all()
+        return context
 
 # Клас представления для удаления МС
 class MsDelete(LoginRequiredMixin, DeleteView):
@@ -150,67 +142,64 @@ class MsDelete(LoginRequiredMixin, DeleteView):
         return HttpResponseRedirect(reverse('mgs', kwargs={'pk': mgs_id}))
 
     def get_context_data(self, **kwargs):
-        
         context = super().get_context_data(**kwargs)
+        ms_id = self.kwargs['pk']
+        context['ms'] = MS.objects.get(id = ms_id)
         context['mgs_list'] = MGS.objects.all()
         return context
 
-# процедура создания новой нитки в текущем кампусе
-@login_required
-def NewThreadInCampus(request, campus_id):
-    campus = CAMPUS.objects.get(id=campus_id)
-    if request.method == 'POST':
-        form = Thread_Form(request.POST)
-        if form.is_valid():
-            thread = form.save(commit=False)
-            thread.save()
-            # для нитки сразу расчитываем концептуальную подсеть 
-            thread_num = thread.num_in_campus
-            campus_num = campus.num_in_ms
-            ms_num = thread.campus.ms.num_in_mgs
-            mgs_num = thread.campus.ms.mgs.mgs_num
-            network = net_lib.calculation_subnet(mgs_num, ms_num, campus_num, thread_num)
-            if network:
-                subnet = SUBNET(network=network, thread=thread)
-                subnet.save()
-            return redirect('campus', pk=campus_id)
-    else:
+# класс для создания новой нитки в текущем кампусе
+class NewThreadInCampus(LoginRequiredMixin, CreateView):
+    model = THREAD
+    fields = ['campus', 'num_in_campus', 'outvlan', 'mapvlan', ]
+    
+    # определяем начальные значения формы:
+    def get_initial(self):
+        campus_id = self.kwargs['campus_id']
+        campus = CAMPUS.objects.get(id=campus_id)
         num_in_campus=1
+        # Вычисляем номер очередной свободной нитки
         while THREAD.objects.filter(campus=campus, num_in_campus=num_in_campus):
             num_in_campus += 1
+        # Пытаемся расчитать внешний и влан для мапинга
         outvlan = net_lib.calculation_outvlan(campus.ms.mgs.mgs_num, campus.ms.num_in_mgs, campus.num_in_ms, num_in_campus)
         mapvlan = net_lib.calculation_mapvlan(campus.ms.num_in_mgs, campus.num_in_ms, num_in_campus)
-        # Если номер кампуса не концептуален, ищем свободную нитку за пределами концепции (х.7.7 - х.8.8)
-        for calc_ms in (7,8):
-            for calc_campus in range(1,9):
-                # исключаем x.7.1-x.7.6
-                if not(calc_ms == 7 and calc_campus in range(1,7)):
-                    for calc_thread in range(1,5):
-                        calc_outvlan = net_lib.calculation_outvlan(campus.ms.mgs.mgs_num, calc_ms, calc_campus, calc_thread)
-                        # проверяем свободна ли нитка
-                        if not THREAD.objects.filter(outvlan=calc_outvlan):
-                            outvlan = calc_outvlan
-                            mapvlan = net_lib.calculation_mapvlan(calc_ms, calc_campus, calc_thread)
-                        # Если outvlan и mapvlan не пустые то выходим из цыкла
-                        if outvlan and mapvlan:
-                            break
+        # Если outvlan и map влан не удалось найти то подбераем свободные вланы за пределами концепции
+        if not outvlan or not mapvlan:
+            for calc_ms in (7,8):
+                for calc_campus in range(1,9):
+                    # исключаем x.7.1-x.7.6
+                    if not(calc_ms == 7 and calc_campus in range(1,7)):
+                        for calc_thread in range(1,5):
+                            calc_outvlan = net_lib.calculation_outvlan(campus.ms.mgs.mgs_num, calc_ms, calc_campus, calc_thread)
+                            # Если нет нитки с таким вланом то забераем его
+                            if not THREAD.objects.filter(outvlan=calc_outvlan):
+                                outvlan = calc_outvlan
+                                mapvlan = net_lib.calculation_mapvlan(calc_ms, calc_campus, calc_thread)
+                            # Если outvlan и mapvlan не пустые то выходим из цыкла
+                            if outvlan and mapvlan:
+                                break
+                    if outvlan and mapvlan:
+                        break
                 if outvlan and mapvlan:
                     break
-            if outvlan and mapvlan:
-                break
-        form = Thread_Form(initial = 
-            {
+        return{
             'campus': campus_id, 
             'num_in_campus': num_in_campus,
             'mapvlan': mapvlan,
             'outvlan': outvlan,
-            })
-    return render(request, 'network/thread_form.html', {'form': form})
+        }
+        
+    
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['mgs_list'] = MGS.objects.all()
+        return context
 
 # Клас представления для изменения настроек нитки
 class ThreadUpdate(LoginRequiredMixin, UpdateView):
     model = THREAD
-    fields = ('campus', 'num_in_campus', 'outvlan', 'mapvlan')
+    fields = ('num_in_campus', 'outvlan', 'mapvlan')
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['mgs_list'] = MGS.objects.all()
@@ -228,6 +217,10 @@ class ThreadDelete(LoginRequiredMixin, DeleteView):
         thread.delete()
 
         return HttpResponseRedirect(reverse('campus', kwargs={'pk': campus_id}))
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['mgs_list'] = MGS.objects.all()
+        return context
 
 # Клас представления для подсети
 class SubnetView(LoginRequiredMixin, generic.DetailView):
@@ -247,33 +240,63 @@ class SubnetView(LoginRequiredMixin, generic.DetailView):
         context['sw_list'] = ACCESS_SWITCH.objects.filter(ip__in=ip_list)
         return context
 
-@login_required
-def SubnetInThread(request, thread_id):
-    thread = THREAD.objects.get(id=thread_id)
-    if request.method == 'POST':
-        form = SubnetInThread_Form(request.POST)
-        if form.is_valid():
-            campus = form.save(commit=False)
-            campus.save()
-            return redirect('campus', pk=thread.campus.id)
-    else:
+# класс для создания нового кампуса в текущей МС
+class SubnetInThread(LoginRequiredMixin, CreateView):
+    model = SUBNET
+    fields = [
+        'thread', 
+        'network', 
+        'gw',
+    ]
+    
+    # определяем начальные значения формы:
+    def get_initial(self):
+        thread_id = self.kwargs['thread_id']
+        thread = THREAD.objects.get(id=thread_id)
+        
         thread_num = thread.num_in_campus
         campus_num = thread.campus.num_in_ms
         ms_num = thread.campus.ms.num_in_mgs
         mgs_num = thread.campus.ms.mgs.mgs_num
         network = net_lib.calculation_subnet(mgs_num, ms_num, campus_num, thread_num)
+        gw = '0.0.0.0'
         if SUBNET.objects.filter(network=network).count() > 0:
             network = None
-        form = SubnetInThread_Form(initial = 
-            {
+            # Если outvlan и map влан не удалось найти то подбераем свободные вланы за пределами концепции
+            for calc_ms in (7,8):
+                for calc_campus in range(1,9):
+                    # исключаем x.7.1-x.7.6
+                    if not(calc_ms == 7 and calc_campus in range(1,7)):
+                        for calc_thread in range(1,5):
+                            network = net_lib.calculation_subnet(mgs_num, calc_ms, calc_campus, calc_thread)
+                            if network:
+                                break
+                    if network:
+                        break
+                if network:
+                    break
+        if network:
+            net = SUBNET(network=network)
+            gw = net.ip_address()[-1]
+        return{
             'thread': thread_id,
             'network': network,
-            })
-    return render(request, 'network/net_in_thread_form.html', {'form': form})
+            'gw' : gw,
+            }
+    
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['mgs_list'] = MGS.objects.all()
+        context['thread'] = THREAD.objects.get(id=self.kwargs['thread_id'])
+        return context
 
 class SubnetDelete(DeleteView):
     model=SUBNET
     
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['mgs_list'] = MGS.objects.all()
+        return context
     def delete(self, request, *args, **kwargs):
         subnet_id = self.kwargs['pk']
 
@@ -283,28 +306,30 @@ class SubnetDelete(DeleteView):
 
         return HttpResponseRedirect(reverse('campus', kwargs={'pk': campus_id}))
 
-# процедура создания нового узла в текущей нитке
-@login_required
-def NewAccessNodeInThread(request, thread_id):
-    thread = THREAD.objects.get(id=thread_id)
-    mgs_list = MGS.objects.all()
-    if request.method == 'POST':
-        form = Node_Form(request.POST)
-        if form.is_valid():
-            node = form.save(commit=False)
-            node.save()
-            return redirect('campus', pk=thread.campus.id)
-    else:
-        form = Node_Form( initial =
-            {
-            'thread':thread_id
-            })
-    return render(request, 'network/access_node_form.html', {'form': form, 'mgs_list': mgs_list, 'thread':thread})
+# класс для создания нового нового узла в текущей нитке
+class NewAccessNodeInThread(LoginRequiredMixin, CreateView):
+    model = ACCESS_NODE
+    fields = ['address', 'thread',]
+    
+    # определяем начальные значения формы:
+    def get_initial(self):
+        thread_id = self.kwargs['thread_id']
+        # Вычисляем первый свободный номер кампуса
+        
+        return{
+            'thread' : thread_id,
+        }
+    
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['mgs_list'] = MGS.objects.all()
+        context['thread'] = THREAD.objects.get(id=self.kwargs['thread_id'])
+        return context
 
 # Клас представления для изменения узла доступа
 class AccessNodeUpdate(LoginRequiredMixin, UpdateView):
     model = ACCESS_NODE
-    fields = ('address', 'thread')
+    fields = ('address',)
     # Для корректного отображения списка МГС влевой части добавляем контекст mgs_list в представление
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -333,32 +358,43 @@ class AccessNodeDelete(DeleteView):
 
         return HttpResponseRedirect(reverse('campus', kwargs={'pk': campus_id}))
 
-# процедура создания нового узла в текущей нитке
-@login_required
-def NewAccessSwitchInNode(request, access_node_id):
-    access_node = ACCESS_NODE.objects.get(id=access_node_id)
-    mgs_list = MGS.objects.all()
-    # Необходимо сформировать список ip-адресов из незанятых в данной нитке
-    ip_list=[]
-    for subnet in SUBNET.objects.filter(thread=access_node.thread):
-        for ip in subnet.ip_address():
-            if not ACCESS_SWITCH.objects.filter(ip=ip):
-                choice = (str(ip), str(ip))
-                ip_list.append(choice)
-    if request.method == 'POST':
-        form = New_Access_Switch_Form(request.POST)
-        if form.is_valid():
-            node = form.save(commit=False)
-            node.save()
-            return redirect('campus', pk=access_node.thread.campus.id)
-    else:
-        form = New_Access_Switch_Form( initial =
-            {
-            'access_node':access_node_id,
-            })
-        form.fields['ip'].widget = widgets.Select(choices=ip_list)
+# класс для создания нового нового коммутатора доступа в текущем узле
+class NewAccessSwitchInNode(LoginRequiredMixin, CreateView):
+    template_name = 'network/new_access_switch_in_node.html'
+    model = ACCESS_SWITCH
+    fields = [
+        'access_node', 
+        'sw_model', 
+        'ip', 
+    ]
+    
+    def get_form(self):
+        access_node_id = self.kwargs['access_node_id']
+        access_node = ACCESS_NODE.objects.get(id=access_node_id)
+        form = super(NewAccessSwitchInNode, self).get_form()
+        # Необходимо сформировать список ip-адресов из незанятых в данной нитке
+        ip_list=[]
+        subnet_list = SUBNET.objects.filter(thread=access_node.thread)
+        for subnet in subnet_list:
+            for ip in subnet.ip_address():
+                if not ACCESS_SWITCH.objects.filter(ip=ip):
+                    choice = (str(ip), str(ip))
+                    ip_list.append(choice)
+        form.fields['ip'].widget = forms.widgets.Select(choices=ip_list)
+        return form
 
-    return render(request, 'network/new_access_switch_in_node.html', {'form': form, 'mgs_list': mgs_list, 'access_node':access_node})
+    # определяем начальные значения формы:
+    def get_initial(self):
+        access_node_id = self.kwargs['access_node_id']
+        return{
+            'access_node' : access_node_id,
+        }
+    
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['mgs_list'] = MGS.objects.all()
+        context['access_node'] = ACCESS_NODE.objects.get(id=self.kwargs['access_node_id'])
+        return context
 
 # Клас представления для коммутатора доступа    
 class AccessSwitchView(LoginRequiredMixin, generic.DetailView):
@@ -384,7 +420,6 @@ class AccessSwitchView(LoginRequiredMixin, generic.DetailView):
         return context
     def post(self, request, *args, **kwargs):
         access_switch_id = self.kwargs['pk']
-        
         form_set = Ports_Of_Acess_Switch_Formset(request.POST)
         if form_set.is_valid():
             #print('OK')
@@ -397,9 +432,13 @@ class AccessSwitchView(LoginRequiredMixin, generic.DetailView):
                     access_node__in = ACCESS_NODE.objects.filter(thread = ACCESS_SWITCH.objects.get(id = access_switch_id).access_node.thread)
                 )
             )
-            print(uplink_ports_in_thread)
+            #print(uplink_ports_in_thread)
             for port in uplink_ports_in_thread:
                 port.save_uplink()
+            #При любых изменениях в настройках коммутатора стераем значение cfg_file, кроме случая когда мы задаем cfg_file
+            access_switch = ACCESS_SWITCH.objects.get(id=access_switch_id)
+            access_switch.cfg_file = ''
+            access_switch.save()
             return redirect('access_switch', pk=access_switch_id)
         else:
             #print('NE OK!!!')
@@ -412,7 +451,7 @@ class AccessSwitchView(LoginRequiredMixin, generic.DetailView):
             self.object = self.get_object()
             context = super().get_context_data(**kwargs)
             context['form_set'] = form_set
-            print('FORM_SET_ERROR_COUNT', form_set.total_error_count())
+            #print('FORM_SET_ERROR_COUNT', form_set.total_error_count())
             return self.render_to_response(context=context)
 
 class AccessSwitchDelete(DeleteView):
@@ -455,3 +494,12 @@ class AccessSwitchModel(LoginRequiredMixin, UpdateView):
     #    campus_id = access_switch.access_node.thread.campus.id
     #    # No need for reverse_lazy here, because it's called inside the method
     #    return reverse(view_name, kwargs={'pk': campus_id})
+
+class AccessSwitchCfgGen(LoginRequiredMixin, generic.DetailView):
+    model = ACCESS_SWITCH
+    template_name = 'network/access_switch_gen_cfg.html'
+   
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['mgs_list'] = MGS.objects.all()
+        return context

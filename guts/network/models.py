@@ -1,10 +1,11 @@
 from django.db import models
 from clients.models import CLIENTS
-
+from guts.settings import GUTS_CONSTANTS
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 import SubnetTree
 import ipaddress
+import re
 from . import net_lib
 
 # Валидатор корректности записи подсети IPv4 (0-255).(0-255).(0-255).(0-255)/(0-32)
@@ -65,16 +66,6 @@ class GUTS_NETWORK(models.Model):
     def __str__(self):
         return "%s (%s)" % (self.network, self.description)
 
-# Класс описывающий vlan
-#class VLAN(models.Model):
-#    class Meta:
-#        verbose_name = "vlan"
-#
-#    vid = models.IntegerField(primary_key=True, verbose_name="vlan")
-#    
-#    def __str__(self):
-#        return "%s" % self.vid
-
 # Класс описывающий lag в сторону уровня агрегации
 class LAG(models.Model):
     title = models.IntegerField(default = 0)
@@ -96,7 +87,6 @@ class SAP(models.Model):
     def __str__(self):
         return "%s:%s.%s (%s)" % (self.lag, self.s_vlan, self.c_vlan, self.title)
     
-
 # Класс описывающий объект МГС
 class MGS(models.Model):
     class Meta:
@@ -112,6 +102,30 @@ class MGS(models.Model):
     def __str__(self):
         return "МГС-%s" % self.mgs_num
 
+    # Количество кампусов в МГС
+    def campus_count(self):
+        campuss_count = 0
+        for ms in self.ms_set.all():
+            campuss_count += ms.campus_set.count()
+        return campuss_count
+
+    # Количество узлов доступа
+    def access_node_count(self):
+        node_count = 0
+        for ms in self.ms_set.all():
+            for campus in ms.campus_set.all():
+                for thread in campus.thread_set.all():
+                    node_count += thread.access_node_set.count()
+        return node_count
+
+    # Количество коммутаторов
+    def access_sw_count(self):
+        sw_count = 0
+        for ms in self.ms_set.all():
+            for campus in ms.campus_set.all():
+                sw_count += campus.access_sw_count()
+        return sw_count
+
 # Класс описывающая объект магистрали
 class MS(models.Model):
     class Meta:
@@ -126,6 +140,11 @@ class MS(models.Model):
     def __str__(self):
         return "МС-%s.%s" % (self.mgs.mgs_num, self.num_in_mgs)
 
+    def get_absolute_url(self):
+        from django.urls import reverse
+        
+        return reverse('mgs', args=[str(self.mgs.id)])
+        
 # Класс описывающий объект кампуса (ППК/МКУ)
 class CAMPUS(models.Model):
     class Meta:
@@ -167,6 +186,29 @@ class CAMPUS(models.Model):
             for node in thread.access_node_set.all():
                 sw_count += node.access_switch_set.count()
         return sw_count
+        
+    def save(self, *args, **kwargs):
+        # Если происходит создание нового кампуса, то сразу после сохранения, создаем нитки в созданом кампусе, 
+        if CAMPUS.objects.filter(id=self.id).count() == 0:
+            super(CAMPUS, self).save(*args, **kwargs)
+            # если создается новый кампус и это ППК, то сразу в ППК создаем четыре нитки
+            # если создается МКУ, то добавляем только одну нитку
+            if self.prefix == 'ppk':
+                threads_count = 4
+            elif self.prefix == 'mku':
+                threads_count = 1
+            for num_in_campus in range(1,threads_count+1):
+                thread = THREAD(campus=self, num_in_campus=num_in_campus)
+                outvlan = net_lib.calculation_outvlan(self.ms.mgs.mgs_num, self.ms.num_in_mgs, self.num_in_ms, num_in_campus)
+                if outvlan:
+                    thread.outvlan = outvlan
+                mapvlan = net_lib.calculation_mapvlan(self.ms.num_in_mgs, self.num_in_ms, num_in_campus)
+                if mapvlan:
+                    thread.mapvlan = mapvlan
+                thread.save()
+            # Иначе просто сохраняем изменения
+        else:
+            super(CAMPUS, self).save(*args, **kwargs)
 
 # Класс описывающий нитку, соответствующую одному l2-сегменту в пределах МГС
 class THREAD(models.Model):
@@ -183,6 +225,29 @@ class THREAD(models.Model):
     outvlan = models.IntegerField(default=1, verbose_name='Внешний vlan', validators=[validator_vid, ])
     mapvlan = models.IntegerField(default=1, verbose_name='Map-vlan', validators=[validator_vid, ])
 
+    def save(self, *args, **kwargs):
+        # Если происходит создание новой нитки, то сразу после сохранения нитки, создаем подсеть для нитки, 
+        # если номера мгс/мс/кампуса/нитки соответствуют концепции, и если расчитаная подсеть еще не занята
+        if THREAD.objects.filter(id=self.id).count() == 0:
+            super(THREAD, self).save(*args, **kwargs)
+            
+            thread_num = self.num_in_campus
+            campus_num = self.campus.num_in_ms
+            ms_num = self.campus.ms.num_in_mgs
+            mgs_num = self.campus.ms.mgs.mgs_num
+            network = net_lib.calculation_subnet(mgs_num, ms_num, campus_num, thread_num)
+            if network:
+                if SUBNET.objects.filter(network=network).count() == 0:
+                    subnet = SUBNET(network=network, thread=self)
+                    subnet.save()
+                else:
+                    print('Подсеть %s уже занята!' % network)
+            else:
+                print('Нитка %s.%s.%s-%s не соответствует концепции!' % (mgs_num, ms_num, campus_num, thread_num))
+        # Иначе просто сохраняем изменения
+        else:
+            super(THREAD, self).save(*args, **kwargs)
+        
     # Представление нитки
     def __str__(self):
         return "%s-%s" % (self.campus, self.num_in_campus)
@@ -222,20 +287,47 @@ class THREAD(models.Model):
         #print(net_lib.arr_to_interval(used_vlans.keys()))
         return used_vlans
 
+    def ip_address(self):
+        list_ip = []
+        for subnet in SUBNET.objects.filter(thread=self):
+            list_ip += subnet.ip_address()
+        return list_ip
+    
+    def free_ip_address(self):
+        list_ip = []
+        for ip in self.ip_address():
+            #print('>>>',ip)
+            if ACCESS_SWITCH.objects.filter(
+                    access_node__in=ACCESS_NODE.objects.filter(
+                        thread = self,
+                    ),
+                    ip = ip,
+                ).count() == 0:
+                list_ip.append(ip)
+        return list_ip
+            
 # Класс описывающий подсеть устройств
 class SUBNET(models.Model):
     class Meta:
         verbose_name = "Подсеть"
         verbose_name_plural = "Подсети"
     
-    # адрес сети
-    network = models.CharField(max_length = 18)
     #Нитка в которой используется данная подсеть
-    thread = models.ForeignKey(THREAD, on_delete=models.CASCADE, blank=True, null=True, default=None)
+    thread = models.ForeignKey(THREAD, on_delete=models.CASCADE, verbose_name='Нитка')
+    # адрес сети
+    network = models.CharField(max_length = 18, unique = True, verbose_name='Подсеть')
+    gw = models.GenericIPAddressField(protocol = 'IPv4', default='0.0.0.0', verbose_name='Адрес шлюза')
 
     # Представление подсети
     def __str__(self):
         return "%s" % (self.network)
+    
+    # функция для определения принадлежности ip-адреса подсети описанной объектом
+    def __contains__(self, ip):
+        if ip in self.ip_address():
+            return True
+        else:
+            return False
     
     def clean(self):
         validator_net_addr(self.network)
@@ -245,7 +337,7 @@ class SUBNET(models.Model):
         list_ip=[]
         ip_net = ipaddress.ip_network(self.network)
         for ip in ip_net:
-            if ip not in (ip_net.network_address, ip_net.broadcast_address-1, ip_net.broadcast_address):
+            if ip not in (ip_net.network_address, ip_net.broadcast_address, ipaddress.ip_address(self.gw)):
                 list_ip.append(ip.compressed)
         return list_ip
     def gw_address(self):
@@ -258,7 +350,7 @@ class SUBNET(models.Model):
     
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('subnet', args=[str(self.id)])
+        return reverse('campus', args=[str(self.thread.campus.id)])
     
 # Класс описывающий производителей оборудования
 class VENDORS(models.Model):
@@ -307,12 +399,14 @@ class SW_MODEL(models.Model):
     vendor = models.ForeignKey(VENDORS, on_delete = models.SET_NULL, blank=True, null=True, verbose_name = 'Производитель')
     title = models.CharField(max_length = 100, verbose_name = 'Название модели')
     fw_version = models.CharField(max_length = 100, blank = True, verbose_name = 'Рекомендованная версия ПО')
+    fw_file = models.CharField(max_length = 100, blank = True, verbose_name = 'Файл прошивки')
+    fw_update_commands = models.TextField(blank = True, verbose_name = 'Описание процесса обновления прошивки')
     hw_version = models.CharField(max_length = 100, blank = True, verbose_name = 'HW версия')
     ports_count = models.IntegerField(default = 0, verbose_name = 'Количество портов')
     ports_names = models.CharField(max_length = 500, blank = True, verbose_name = 'Названия портов в конфиге')
     ports_types = models.CharField(max_length = 200, blank = True, verbose_name = 'Типы портов по умолчанию', help_text = create_help_text_for_type_ports())
     cfg_template = models.CharField(max_length = 100, blank = True)
-
+    cfg_download_commands = models.TextField(blank = True, verbose_name = 'Описание процесса загрузки конфигурации')
     # Представление модели коммутатора
     def __str__(self):
         return "%s %s" % (self.vendor, self.title)
@@ -323,16 +417,31 @@ class SW_MODEL(models.Model):
         if len(self.ports_names.split(',')) != self.ports_count:
             raise ValidationError('Настройки названий портов не соответствуют введенному количеству портов! (%s != %s)' % (len(self.ports_names.split(',')), self.ports_count))
         for port_type in self.ports_types.split(','):
-            print(port_type, PORT_TYPE.objects.filter(id=port_type), PORT_TYPE.objects.filter(id=port_type).count())
+            #print(port_type, PORT_TYPE.objects.filter(id=port_type), PORT_TYPE.objects.filter(id=port_type).count())
             if PORT_TYPE.objects.filter(id=port_type).count() == 0:
                 raise ValidationError('Введен неопределенный тип порта! (%s)' % port_type)
 
+    def fw_update(self):
+        update_text = ''
+        for line in self.fw_update_commands.split('\r'):
+            if line.find('<TFTP_IP>') >= 0:
+                tftp_ip_local = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_LOCAL']
+                update_text += (re.sub('<TFTP_IP>', tftp_ip_local, line))
+                tftp_ip_remote = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_REMOTE']
+                update_text += (re.sub('<TFTP_IP>', tftp_ip_remote, line))
+            else:
+                update_text += (line)
+        fw_version = "<b>%s</b>" % self.fw_version
+        update_text = re.sub("<FW>", fw_version, update_text)
+        update_text = re.sub("<FW_FILE>", self.fw_file, update_text)
+        
+        return update_text
 # Класс описывающий узел уровня доступа
 class ACCESS_NODE(models.Model):
     class Meta:
         verbose_name = "Узел доступа"
         verbose_name_plural = "Узлы доступа"
-
+    
     address = models.CharField(max_length = 100, unique=True)
     thread = models.ForeignKey(THREAD, on_delete = models.CASCADE)
 
@@ -352,13 +461,24 @@ class ACCESS_SWITCH(models.Model):
     access_node = models.ForeignKey(ACCESS_NODE, on_delete = models.CASCADE)
     sw_model = models.ForeignKey(SW_MODEL, on_delete = models.SET_NULL, blank=True, null=True)
     ip = models.GenericIPAddressField(protocol = 'IPv4', unique=True)
+    cfg_file = models.CharField(max_length = 200, blank = True, verbose_name = 'Файл текущей конфигурации.', help_text = 'Значение поля очищается при каждых изменениях коммутатора')
 
+    def clean(self):
+        # В зависимости от того создается новый коммутатор или обновляется существующий
+        # процедура валидации ip-адреса разная
+        ip_list = self.access_node.thread.free_ip_address()
+        if ACCESS_SWITCH.objects.filter(id=self.id).count() > 0:
+            cur_sw = ACCESS_SWITCH.objects.get(id=self.id)
+            ip_list.append(cur_sw.ip)
+        if self.ip not in ip_list:
+            raise ValidationError('Ip-адрес коммутатора (%s), должна пренадлежать подсетям из нитки (%s) которой он пренадлежит!' % (self.ip, self.access_node.thread))
+            
     # Представление коммутатора доступа
     def __str__(self):
         address = self.access_node.address
         ip = self.ip
         return "%s (%s)" % (address, ip)
-    
+
     def save(self, *args, **kwargs):
         # если происходит обновление данных существующего коммутатора
         if ACCESS_SWITCH.objects.filter(id = self.id):
@@ -374,14 +494,11 @@ class ACCESS_SWITCH(models.Model):
                     if ports.filter(num_in_switch=port_num).count() == 0:
                         self.port_of_access_switch_set.create(
                             num_in_switch = port_num,
-#                            port_name = self.sw_model.ports_names.split(',')[port_num-1]
-#                            port_type = PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]),
-#                            description = PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]).default_description
                         )
                     # Если порт старый и был/стал аплинком или портом расширения, то меняем настройки в соответствии с новой моделью
                     elif ports.get(num_in_switch=port_num).port_type.id in (0, 1) or PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]).id in (0, 1):
                         # Меняем настройки порта port_num
-                        print ('Меняем настройки порта', port_num, PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]))
+                        #print ('Меняем настройки порта', port_num, PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]))
                         edit_port = ports.get(num_in_switch=port_num)
                         edit_port.port_type =  PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1])
                         edit_port.description = PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]).default_description
@@ -390,9 +507,9 @@ class ACCESS_SWITCH(models.Model):
                         edit_port.save()
                     else:
                         edit_port = ports.get(num_in_switch=port_num)
-                        print('БЕЗ ИЗМЕНЕНИЙ!', ports.get(num_in_switch=port_num), 'type =',ports.get(num_in_switch=port_num).port_type.id, ') / ', PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]))
+                        #print('БЕЗ ИЗМЕНЕНИЙ!', ports.get(num_in_switch=port_num), 'type =',ports.get(num_in_switch=port_num).port_type.id, ') / ', PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]))
                         edit_port.port_name = self.sw_model.ports_names.split(',')[port_num-1]
-                        print(self.sw_model.ports_names.split(',')[port_num-1])
+                        #print(self.sw_model.ports_names.split(',')[port_num-1])
                         edit_port.save()
                 # в случае если портов стало меньше, удаляем старые порты
                 for port in ports:
@@ -409,15 +526,39 @@ class ACCESS_SWITCH(models.Model):
                         num_in_switch = port_num,
                         port_name = self.sw_model.ports_names.split(',')[port_num-1]
                         )
-                    
+
     def get_absolute_url(self):
         from django.urls import reverse
         return reverse('access_switch', args=[str(self.id)])   
-    def port_type(self, port):
-        if port in range(1, self.ports_count+1):
-            return self.ports_types.split(',')[port-1]
-        else:
-            return None
+
+    def cfg_download(self):
+        # если файл конфигурации не генерировался после последних изменений, то его необходимо сгенерировать
+        if self.cfg_file == '':
+            self.cfg_gen()
+        download_text = ''
+        for line in self.sw_model.cfg_download_commands.split('\r'):
+            if line.find('<TFTP_IP>') >= 0:
+                tftp_ip_local = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_LOCAL']
+                download_text += (re.sub('<TFTP_IP>', tftp_ip_local, line))
+                tftp_ip_remote = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_REMOTE']
+                download_text += (re.sub('<TFTP_IP>', tftp_ip_remote, line))
+            else:
+                download_text += (line)
+        download_text = re.sub("<CFG_FILE>", self.cfg_file, download_text)
+        return download_text
+    
+    def cfg_gen(self):
+        self.cfg_file = 'cfg_file.cfg'
+        self.save()
+
+    def gw(self):
+        gw_ip = None
+        for subnet in SUBNET.objects.filter(thread = self.access_node.thread):
+            if self.ip in subnet:
+                gw_ip = subnet.gw
+                break
+        return gw_ip
+
     def ports(self):
         return range(1,self.sw_model.ports_count+1)
 
@@ -447,7 +588,7 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
     def clean(self):
         if self.u_vlan < 0:
             raise ValidationError('Значение Untag-vlan не может быть отрицательным!!!')
-        elif self.u_vlan > 4094:
+        if self.u_vlan > 4094:
             raise ValidationError('Значение Untag-vlan не может быть большим чем 4094!!!')
 
     def save(self, *args, **kwargs):

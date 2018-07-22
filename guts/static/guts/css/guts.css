@@ -93,3 +93,13 @@ body {margin:0;}
 {
     cursor: pointer;
 }
+
+.td_var {
+    text-align: right;
+    width: 13%;
+}
+.td_val {
+    font-weight: bold;
+    text-align: left;
+    width: 20%;
+}
