@@ -22,18 +22,18 @@
 						</a>
 					<li>
 						<a href="{% url 'logout'%}?next={{request.path}}">
-							<span class="glyphicon glyphicon-log-out"></span> Logout
+							<span class="glyphicon glyphicon-log-out"></span> Выход
 						</a>
 					</li>
 				{% else %}
 					<li>
 						<a href="{% url 'login'%}?next=/">
-							<span class="glyphicon glyphicon-log-in"></span> Login
+							<span class="glyphicon glyphicon-log-in"></span> Вход
 						</a>
 					</li>
 					<li>
-						<a href="#">
-							<span class="glyphicon glyphicon-certificate"> Sign Up</span>
+						<a href="{% url 'registration_register'%}?next=/">
+							<span class="glyphicon glyphicon-certificate"> Регистрация</span>
 						</a>
 					</li>
 				{% endif %}

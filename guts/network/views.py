@@ -9,6 +9,8 @@ from django.shortcuts import redirect
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django import forms
+from datetime import datetime
+from django.utils import timezone
 
 from .forms import Ms_Form, Campus_Form, SubnetInThread_Form, New_Access_Switch_Form, Ports_Of_Acess_Switch_Formset
 from . import net_lib
@@ -23,6 +25,9 @@ class IndexView(LoginRequiredMixin, generic.ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        for mgs in context['object_list']:
+            if datetime.now().day-mgs.last_update.day > 1:
+                mgs.update_counts()
         # Количество посещений представления CampusView
         context['num_visits'] = self.request.session.get('num_visits', 0)
         self.request.session['num_visits'] = context['num_visits']+1
@@ -37,6 +42,15 @@ class MgsView(LoginRequiredMixin, generic.DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['mgs_list'] = MGS.objects.all()
+        mgs = context['object']
+        for ms in mgs.ms_set.all():
+            for campus in ms.campus_set.all():
+                if timezone.now().hour-campus.last_update.hour > 1:
+                #    print(datetime.now().hour, campus.last_update.hour)
+                    campus.update_counts()
+                #else:
+                #    print('OK', datetime.now().hour, campus.last_update.hour)
+                    
         return context
 
 # Клас представления для кампуса
@@ -248,6 +262,12 @@ class SubnetInThread(LoginRequiredMixin, CreateView):
         'network', 
         'gw',
     ]
+
+    def get_form(self):
+        form = super(SubnetInThread, self).get_form()
+        # Т.к. нитка уже определена, необходимо скрыть поле выбора нитки!
+        form.fields['thread'].widget = forms.HiddenInput()
+        return form
     
     # определяем начальные значения формы:
     def get_initial(self):
@@ -319,6 +339,12 @@ class NewAccessNodeInThread(LoginRequiredMixin, CreateView):
         return{
             'thread' : thread_id,
         }
+
+    def get_form(self):
+        form = super(NewAccessNodeInThread, self).get_form()
+        # Т.к. нитка уже определена, необходимо скрыть поле выбора нитки!
+        form.fields['thread'].widget = forms.HiddenInput()
+        return form
     
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -337,8 +363,6 @@ class AccessNodeUpdate(LoginRequiredMixin, UpdateView):
         # так же понадобится информация о нитке в которой расположена нода
         node_id = self.kwargs['pk']
         access_node = ACCESS_NODE.objects.get(id=node_id)
-        thread = access_node.thread
-        context['thread'] = thread
         return context
 
 class AccessNodeDelete(DeleteView):
@@ -381,6 +405,8 @@ class NewAccessSwitchInNode(LoginRequiredMixin, CreateView):
                     choice = (str(ip), str(ip))
                     ip_list.append(choice)
         form.fields['ip'].widget = forms.widgets.Select(choices=ip_list)
+        # Т.к. нода уже определена, необходимо скрыть поле выбора ноды!
+        form.fields['access_node'].widget = forms.HiddenInput()
         return form
 
     # определяем начальные значения формы:
@@ -503,3 +529,4 @@ class AccessSwitchCfgGen(LoginRequiredMixin, generic.DetailView):
         context = super().get_context_data(**kwargs)
         context['mgs_list'] = MGS.objects.all()
         return context
+

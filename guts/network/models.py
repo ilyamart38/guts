@@ -1,11 +1,16 @@
 from django.db import models
 from clients.models import CLIENTS
 from guts.settings import GUTS_CONSTANTS
+from guts.settings import MEDIA_ROOT
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from django.core.files import File
 import SubnetTree
 import ipaddress
 import re
+import os
+#from datetime import datetime
+from django.utils import timezone
 from . import net_lib
 
 # Валидатор корректности записи подсети IPv4 (0-255).(0-255).(0-255).(0-255)/(0-32)
@@ -97,34 +102,35 @@ class MGS(models.Model):
     # Адрес МГС
     address = models.CharField(max_length = 100)
     lag = models.ForeignKey(LAG, on_delete = models.SET_NULL, blank=True, null=True)
-    
+    # отдельные поля для хранения информации о количестве кампусов/узлов/коммутаторов, 
+    # которые будут обновляться раз в сутки, для этого еще поле с временем последнего обновления
+    campus_counter = models.IntegerField(default = 0, verbose_name="Количество кампусов в МГС", help_text = "Значение обновляется автоматически при вызове метода update_counts()",         editable=False)
+    node_counter = models.IntegerField(default = 0, verbose_name="Количество узлов в МГС", help_text = "Значение обновляется автоматически при вызове метода update_counts()",              editable=False)
+    switche_counter = models.IntegerField(default = 0, verbose_name="Количество коммутаторов в МГС", help_text = "Значение обновляется автоматически при вызове метода update_counts()",    editable=False)
+    last_update = models.DateTimeField(default=timezone.now, verbose_name='Время последнего обновления данных по МГС',                                                                                            editable=False)
     # Представление МГС
     def __str__(self):
         return "МГС-%s" % self.mgs_num
 
-    # Количество кампусов в МГС
-    def campus_count(self):
+    # Процедура обновления счетчиков по МГС
+    def update_counts(self):
         campuss_count = 0
+        node_count = 0
+        sw_count = 0
         for ms in self.ms_set.all():
             campuss_count += ms.campus_set.count()
-        return campuss_count
-
-    # Количество узлов доступа
-    def access_node_count(self):
-        node_count = 0
-        for ms in self.ms_set.all():
             for campus in ms.campus_set.all():
                 for thread in campus.thread_set.all():
                     node_count += thread.access_node_set.count()
-        return node_count
-
-    # Количество коммутаторов
-    def access_sw_count(self):
-        sw_count = 0
-        for ms in self.ms_set.all():
-            for campus in ms.campus_set.all():
-                sw_count += campus.access_sw_count()
-        return sw_count
+                    for node in thread.access_node_set.all():
+                        sw_count += node.access_switch_set.count()
+                        
+        self.campus_counter = campuss_count
+        self.node_counter = node_count
+        self.switche_counter = sw_count
+        self.last_update = timezone.now
+        self.save()
+    
 
 # Класс описывающая объект магистрали
 class MS(models.Model):
@@ -165,6 +171,11 @@ class CAMPUS(models.Model):
     # Принадлежность к МС
     ms = models.ForeignKey(MS, on_delete=models.CASCADE, verbose_name='МС')
     num_in_ms = models.IntegerField(default = 1)
+    # отдельные поля для хранения информации о узлов/коммутаторов, 
+    # которые будут обновляться раз в сутки, для этого еще поле с временем последнего обновления
+    node_counter = models.IntegerField(default = 0, verbose_name="Количество узлов в кампусе", help_text = "Значение обновляется автоматически при вызове метода update_counts()",              editable=False)
+    switche_counter = models.IntegerField(default = 0, verbose_name="Количество коммутаторов в кампусе", help_text = "Значение обновляется автоматически при вызове метода update_counts()",    editable=False)
+    last_update = models.DateTimeField(default=timezone.now, verbose_name='Время последнего обновления данных по МГС',                                                                          )#editable=False)
     
     # Представление кампуса
     def __str__(self):
@@ -174,18 +185,21 @@ class CAMPUS(models.Model):
         from django.urls import reverse
         return reverse('campus', args=[str(self.id)])
     
-    def access_node_count(self):
+    # Процедура обновления счетчиков по МГС
+    def update_counts(self):
+        print('update %s' % self)
         node_count = 0
-        for thread in self.thread_set.all():
-            node_count += thread.access_node_set.count()
-        return node_count
-
-    def access_sw_count(self):
         sw_count = 0
         for thread in self.thread_set.all():
+            node_count += thread.access_node_set.count()
             for node in thread.access_node_set.all():
                 sw_count += node.access_switch_set.count()
-        return sw_count
+        self.node_counter = node_count
+        self.switche_counter = sw_count
+        print('>', self.last_update)
+        self.last_update = timezone.now()
+        print('>>', self.last_update)
+        self.save()
         
     def save(self, *args, **kwargs):
         # Если происходит создание нового кампуса, то сразу после сохранения, создаем нитки в созданом кампусе, 
@@ -398,6 +412,7 @@ class SW_MODEL(models.Model):
 
     vendor = models.ForeignKey(VENDORS, on_delete = models.SET_NULL, blank=True, null=True, verbose_name = 'Производитель')
     title = models.CharField(max_length = 100, verbose_name = 'Название модели')
+    eqm_type = models.CharField(max_length = 100, default = '', verbose_name = 'Тип объекта в eqm')
     fw_version = models.CharField(max_length = 100, blank = True, verbose_name = 'Рекомендованная версия ПО')
     fw_file = models.CharField(max_length = 100, blank = True, verbose_name = 'Файл прошивки')
     fw_update_commands = models.TextField(blank = True, verbose_name = 'Описание процесса обновления прошивки')
@@ -405,7 +420,9 @@ class SW_MODEL(models.Model):
     ports_count = models.IntegerField(default = 0, verbose_name = 'Количество портов')
     ports_names = models.CharField(max_length = 500, blank = True, verbose_name = 'Названия портов в конфиге')
     ports_types = models.CharField(max_length = 200, blank = True, verbose_name = 'Типы портов по умолчанию', help_text = create_help_text_for_type_ports())
-    cfg_template = models.CharField(max_length = 100, blank = True)
+    #cfg_template = models.CharField(max_length = 100, blank = True)
+    cfg_template = models.FileField(upload_to = 'cfg_templates')
+    
     cfg_download_commands = models.TextField(blank = True, verbose_name = 'Описание процесса загрузки конфигурации')
     # Представление модели коммутатора
     def __str__(self):
@@ -423,26 +440,29 @@ class SW_MODEL(models.Model):
 
     def fw_update(self):
         update_text = ''
-        for line in self.fw_update_commands.split('\r'):
-            if line.find('<TFTP_IP>') >= 0:
-                tftp_ip_local = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_LOCAL']
-                update_text += (re.sub('<TFTP_IP>', tftp_ip_local, line))
-                tftp_ip_remote = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_REMOTE']
-                update_text += (re.sub('<TFTP_IP>', tftp_ip_remote, line))
-            else:
-                update_text += (line)
-        fw_version = "<b>%s</b>" % self.fw_version
-        update_text = re.sub("<FW>", fw_version, update_text)
-        update_text = re.sub("<FW_FILE>", self.fw_file, update_text)
-        
+        if self.fw_update_commands:
+            for line in self.fw_update_commands.split('\r'):
+                if line.find('<TFTP_IP>') >= 0:
+                    tftp_ip_local = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_LOCAL']
+                    update_text += (re.sub('<TFTP_IP>', tftp_ip_local, line))
+                    tftp_ip_remote = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_REMOTE']
+                    update_text += (re.sub('<TFTP_IP>', tftp_ip_remote, line))
+                else:
+                    update_text += (line)
+            fw_version = "<b>%s</b>" % self.fw_version
+            update_text = re.sub("<FW>", fw_version, update_text)
+            update_text = re.sub("<FW_FILE>", self.fw_file, update_text)
+        else:
+            update_text = 'Для данной модели коммутатора нет описания процесса обновления прошивки!'
         return update_text
 # Класс описывающий узел уровня доступа
 class ACCESS_NODE(models.Model):
     class Meta:
         verbose_name = "Узел доступа"
         verbose_name_plural = "Узлы доступа"
+        unique_together = ('address', 'thread',)
     
-    address = models.CharField(max_length = 100, unique=True)
+    address = models.CharField(max_length = 100)
     thread = models.ForeignKey(THREAD, on_delete = models.CASCADE)
 
     # Представление узла
@@ -461,8 +481,10 @@ class ACCESS_SWITCH(models.Model):
     access_node = models.ForeignKey(ACCESS_NODE, on_delete = models.CASCADE)
     sw_model = models.ForeignKey(SW_MODEL, on_delete = models.SET_NULL, blank=True, null=True)
     ip = models.GenericIPAddressField(protocol = 'IPv4', unique=True)
-    cfg_file = models.CharField(max_length = 200, blank = True, verbose_name = 'Файл текущей конфигурации.', help_text = 'Значение поля очищается при каждых изменениях коммутатора')
-
+    network = models.ForeignKey(SUBNET, on_delete = models.SET_NULL, blank=True, null=True, editable=False)
+    #cfg_file = models.CharField(max_length = 200, blank = True, verbose_name = 'Файл текущей конфигурации.', help_text = 'Значение поля очищается при каждых изменениях коммутатора')
+    cfg_file = models.FileField(upload_to = 'cfg_switches')
+    
     def clean(self):
         # В зависимости от того создается новый коммутатор или обновляется существующий
         # процедура валидации ip-адреса разная
@@ -482,8 +504,9 @@ class ACCESS_SWITCH(models.Model):
     def save(self, *args, **kwargs):
         # если происходит обновление данных существующего коммутатора
         if ACCESS_SWITCH.objects.filter(id = self.id):
+            curr_sw = ACCESS_SWITCH.objects.get(id = self.id)
             # Если задана модель коммутатора
-            if self.sw_model:
+            if self.sw_model and curr_sw.sw_model != self.sw_model:
                 # делаем выборку по портам коммутатора
                 ports = PORT_OF_ACCESS_SWITCH.objects.filter(access_switch=self)
                 # если портов стало больше то добавленные порты настраиваем в соответствии с шаблоном модели
@@ -495,7 +518,7 @@ class ACCESS_SWITCH(models.Model):
                         self.port_of_access_switch_set.create(
                             num_in_switch = port_num,
                         )
-                    # Если порт старый и был/стал аплинком или портом расширения, то меняем настройки в соответствии с новой моделью
+                    # Если порт старый был/стал аплинком или портом расширения, то меняем настройки в соответствии с новой моделью
                     elif ports.get(num_in_switch=port_num).port_type.id in (0, 1) or PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]).id in (0, 1):
                         # Меняем настройки порта port_num
                         #print ('Меняем настройки порта', port_num, PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]))
@@ -519,6 +542,10 @@ class ACCESS_SWITCH(models.Model):
             super(ACCESS_SWITCH, self).save(*args, **kwargs)
         # если происходит добавление нового коммутатора
         else:
+            for net in SUBNET.objects.all():
+                if self.ip in net:
+                    self.network = net
+                    break
             super(ACCESS_SWITCH, self).save(*args, **kwargs)
             if self.sw_model:
                 for port_num in range(1, self.sw_model.ports_count+1):
@@ -526,30 +553,45 @@ class ACCESS_SWITCH(models.Model):
                         num_in_switch = port_num,
                         port_name = self.sw_model.ports_names.split(',')[port_num-1]
                         )
+        if not self.network or self.ip not in self.network:
+            print('???NET???')
+            for net in SUBNET.objects.all():
+                if self.ip in net:
+                    self.network = net
+                    break
+            super(ACCESS_SWITCH, self).save(*args, **kwargs)
 
     def get_absolute_url(self):
         from django.urls import reverse
         return reverse('access_switch', args=[str(self.id)])   
 
     def cfg_download(self):
-        # если файл конфигурации не генерировался после последних изменений, то его необходимо сгенерировать
-        if self.cfg_file == '':
-            self.cfg_gen()
         download_text = ''
-        for line in self.sw_model.cfg_download_commands.split('\r'):
-            if line.find('<TFTP_IP>') >= 0:
-                tftp_ip_local = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_LOCAL']
-                download_text += (re.sub('<TFTP_IP>', tftp_ip_local, line))
-                tftp_ip_remote = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_REMOTE']
-                download_text += (re.sub('<TFTP_IP>', tftp_ip_remote, line))
-            else:
-                download_text += (line)
-        download_text = re.sub("<CFG_FILE>", self.cfg_file, download_text)
+        if self.sw_model.cfg_download_commands:
+            # если файл конфигурации не генерировался после последних изменений, то его необходимо сгенерировать
+            #if self.cfg_file == '':
+            self.cfg_gen()
+            if self.cfg_file:
+                download_text = "Конфигурация коммутатора записана в файл <a href='%s'>%s</a>\n\r" % (self.cfg_file.url, self.cfg_file.name)
+                for line in self.sw_model.cfg_download_commands.split('\r'):
+                    if line.find('<TFTP_IP>') >= 0:
+                        tftp_ip_local = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_LOCAL']
+                        download_text += (re.sub('<TFTP_IP>', tftp_ip_local, line))
+                        tftp_ip_remote = "<b>%s</b>" % GUTS_CONSTANTS['TFTP_IP_REMOTE']
+                        download_text += (re.sub('<TFTP_IP>', tftp_ip_remote, line))
+                    else:
+                        download_text += (line)
+                download_text = re.sub("<CFG_FILE>", self.cfg_file.name, download_text)
+        else:
+            download_text = 'Для данной модели коммутатора нет описания процесса загрузки файла конфигурации!'
         return download_text
     
     def cfg_gen(self):
-        self.cfg_file = 'cfg_file.cfg'
-        self.save()
+        if self.sw_model.vendor.title == 'D-Link':
+            dlink_cfg(self)
+            return
+        print('>>>>>',self.sw_model.vendor.title)
+        
 
     def gw(self):
         gw_ip = None
@@ -615,6 +657,7 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
             current_port = PORT_OF_ACCESS_SWITCH.objects.get(id=self.id)
             # 1. проверяем изменился ли тип порта
             if self.port_type != current_port.port_type:
+                print('>>>',current_port.port_type,'->',self.port_type )
                 # Если новое значение соответствует магистральному или распределительному порту
                 if self.port_type.id in (0, 1):
                     # то меняем значение u_vlan на 1, а t_vlans на список вланов в нитке, к которой относится коммутатора
@@ -647,7 +690,6 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
                     # Убираем все вланы с портов
                     self.u_vlan = 0
                     self.t_vlans = ''
-            pass
         super(PORT_OF_ACCESS_SWITCH, self).save(*args, **kwargs)
     
     # процедура специально для обновления аплинков и распред портов
@@ -677,3 +719,155 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
         if type_id in (0, 1):
             self.u_vlan = 1
         
+def dlink_cfg(access_switch):
+    # определяем шаблон конфигурации по модели коммутатора
+    template_file = access_switch.sw_model.cfg_template
+    dst_file = '%s_%s.cfg' % (access_switch.pk, timezone.now().strftime('%Y%m%d_%H%M'))
+    # Если определен шаблон конфига пытаемся его открыть
+    if template_file != '':
+        # Пытаемся открыть файл шаблона конфигурации
+        try:
+            template = open(template_file.path).read()
+        except IOError as err_str:
+            print('ERROR!!! Неудалось прочитать файл шаблона!!!')
+            print('< ' + str(err_str) + ' >')
+            return
+        # Пытаемся создать файл конфигурации для данного коммутатора
+        try:
+            tmp_cfg_file_path = '/tmp/guts_cfg.tmp'
+            cfg_file = open(tmp_cfg_file_path,"w").close()
+            cfg_file = open(tmp_cfg_file_path,"r+")
+        except IOError as err_str:
+            print('ERROR!!! Неудалось создать файл для записи конфига!!!')
+            print('< ' + str(err_str) + ' >')
+            return
+        ##############################################################################################
+        #<THREAD_NUM>           номер нитки (111-1)
+        THREAD_NUM = '%s-%s.%s.%s-%s' % (
+                    access_switch.access_node.thread.campus.prefix,
+                    access_switch.access_node.thread.campus.ms.mgs.mgs_num,
+                    access_switch.access_node.thread.campus.ms.num_in_mgs,
+                    access_switch.access_node.thread.campus.num_in_ms,
+                    access_switch.access_node.thread.num_in_campus)
+        template = re.sub('<THREAD_NUM>', THREAD_NUM, template)
+        
+        ##############################################################################################
+        #<ADDRESS>              адрес_латиницей
+        ADDRESS = net_lib.translit(access_switch.access_node.address)
+        template = re.sub('<ADDRESS>', ADDRESS, template)
+        
+        ##############################################################################################
+        #<SNMP_CONTACT>         
+        SNMP_CONTACT = GUTS_CONSTANTS['SNMP_CONTACT']
+        template = re.sub('<SNMP_CONTACT>', SNMP_CONTACT, template)
+        
+        ##############################################################################################
+        #<CLIENTS_PORTS>        порты с клиентскими подключениями (все кроме бэкбонов, и сигнальных)
+        
+        ##############################################################################################
+        #<PPPOE_PORTS>          порты pppoe-клиентов
+        
+        ##############################################################################################
+        #<IP_PORTS>             порты на которых разрешен ip-трафик (не pppoe)
+        
+        ##############################################################################################
+        #<BACKBON_PORTS>        порты аплинки+порты расширения
+        
+        ##############################################################################################
+        #<NOT_BACKBON_PORTS>    порты кроме аплинков и портов расширения
+        
+        ##############################################################################################
+        #<MGMT_VLAN>              номер влана управления коммутатора
+        MGMT_VLAN = GUTS_CONSTANTS['MGMT_VLAN']
+        template = re.sub('<MGMT_VLAN>', MGMT_VLAN, template)
+        
+        ##############################################################################################
+        #<MGMT_IP>              ip-адрес коммутатора
+        MGMT_IP = access_switch.ip
+        template = re.sub('<MGMT_IP>', MGMT_IP, template)
+        
+        ##############################################################################################
+        #<MGMT_LONG_MASK>       маска подсети управления
+        MGMT_LONG_MASK = str(ipaddress.ip_network(access_switch.network).netmask)
+        template = re.sub('<MGMT_LONG_MASK>', MGMT_LONG_MASK, template)
+        
+        ##############################################################################################
+        #<GW>                   ip-адрес шлюза поумолчанию
+        
+        ##############################################################################################
+        #<ID>                   id коммутатора
+        ID = access_switch.pk
+        template = re.sub('<ID>', str(ID), template)
+        
+        ##############################################################################################
+        #<ADMIN_PROXY_IP>       
+        ADMIN_PROXY_IP = GUTS_CONSTANTS['ADMIN_PROXY_IP']
+        template = re.sub('<ADMIN_PROXY_IP>', ADMIN_PROXY_IP, template)
+        
+        ##############################################################################################
+        #<EQM_IP>
+        EQM_IP = GUTS_CONSTANTS['EQM_IP']
+        template = re.sub('<EQM_IP>', EQM_IP, template)
+        
+        ##############################################################################################
+        #<NS4_IP>
+        NS4_IP = GUTS_CONSTANTS['NS4_IP']
+        template = re.sub('<NS4_IP>', NS4_IP, template)
+        
+        ##############################################################################################
+        #<NS2_IP>
+        NS2_IP = GUTS_CONSTANTS['NS2_IP']
+        template = re.sub('<NS2_IP>', NS2_IP, template)
+        
+        ##############################################################################################
+        #<RADIUS1_IP>
+        RADIUS1_IP = GUTS_CONSTANTS['RADIUS1_IP']
+        template = re.sub('<RADIUS1_IP>', RADIUS1_IP, template)
+        
+        ##############################################################################################
+        #<RADIUS2_IP>
+        RADIUS2_IP = GUTS_CONSTANTS['RADIUS2_IP']
+        template = re.sub('<RADIUS2_IP>', RADIUS2_IP, template)
+        
+        ##############################################################################################
+        #<radius_port>
+        radius_port = GUTS_CONSTANTS['radius_port']
+        template = re.sub('<radius_port>', radius_port, template)
+        
+        ##############################################################################################
+        # <acct_port>
+        acct_port = GUTS_CONSTANTS['acct_port']
+        template = re.sub('<acct_port>', acct_port, template)
+        
+        ##############################################################################################
+        #<TIME_ZONE>
+        TIME_ZONE = GUTS_CONSTANTS['TIME_ZONE']
+        template = re.sub('<TIME_ZONE>', TIME_ZONE, template)
+        
+        ##############################################################################################
+        #<STP_PRIORITY>
+        
+        ##############################################################################################
+        #<CONF_VLAN>                Настройи вланов
+        
+        ##############################################################################################
+        #<CONF_TRAF_SEGMENTATION>   Настройки traffic segmentation
+        
+        ##############################################################################################
+        #<SNMP_RW_COMMUNITY>
+        SNMP_RW_COMMUNITY = GUTS_CONSTANTS['SNMP_RW_COMMUNITY']
+        template = re.sub('<SNMP_RW_COMMUNITY>', SNMP_RW_COMMUNITY, template)
+        
+        template = re.sub('<TEST>', '', template)
+        try:
+            cfg_file.write(template)
+            access_switch.cfg_file.save(dst_file,File(cfg_file),save=False)
+            # Закрываем и удаляем временный файл
+            cfg_file.close()
+        except IOError as err_str:
+            print('ERROR!!! Неудалось записать файл для записи конфига!!!')
+            print('< ' + str(err_str) + ' >')
+            return
+        os.remove(tmp_cfg_file_path)
+        access_switch.save()
+    

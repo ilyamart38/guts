@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'clients.apps.ClientsConfig',
     'ipoe.apps.IpoeConfig',
     'l2.apps.L2Config',
+    'registration',
 ]
 
 MIDDLEWARE = [
@@ -80,10 +81,20 @@ WSGI_APPLICATION = 'guts.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.sqlite3',
+#        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#    }
+#}
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'guts_2.0',
+        'USER': 'root',
+        'PASSWORD': 'Per$pektiv@',
+        'HOST': '127.0.0.1',
+#        'PORT': '5432',
     }
 }
 
@@ -113,13 +124,17 @@ AUTH_PASSWORD_VALIDATORS = [
 #LANGUAGE_CODE = 'en-us'
 LANGUAGE_CODE = 'ru-ru'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Irkutsk'
 
 USE_I18N = True
 
 USE_L10N = True
 
 USE_TZ = True
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'files', 'media')
+MEDIA_URL = '/media/'
+
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
@@ -133,13 +148,37 @@ STATIC_URL = '/static/'
 # Redirect to home URL after login (Default redirects to /accounts/profile/)
 LOGIN_REDIRECT_URL = '/'
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'mail.ilam.cf'
+DEFAULT_FROM_EMAIL = 'ilam@ilam.cf'
+EMAIL_PORT = '25'
+EMAIL_HOST_USER = 'guts@ilam.cf'
+EMAIL_HOST_PASSWORD = 'K0l0tundr@351'
 
+ACCOUNT_ACTIVATION_DAYS = 2
+
+PORT_TYPES = {
+    '0'  : 'Магистральный порт',
+    '1'  : 'Распределительный порт',
+    '3'  : 'PPPoE-подключение',
+    '4'  : 'Прочее-подключение',
+    '5'  : 'Сигнализатор',
+    '99' : 'Неисправный порт'
+}
 GUTS_CONSTANTS = {
-    'TFTP_IP_LOCAL' : '10.111.31.11',
-    'TFTP_IP_REMOTE' : '109.194.16.10',
-    'EQM_IP' : '109.194.16.25',
-    'ADMIN_PROXY_IP' : '109.194.16.10',
-    'NS2_IP' : '109.194.16.4',
-    'NS4_IP' : '109.194.17.5',
+    'SNMP_CONTACT'      : 'ER-Telecom',
+    'TFTP_IP_LOCAL'     : '10.111.31.11',
+    'TFTP_IP_REMOTE'    : '109.194.16.10',
+    'EQM_IP'            : '109.194.16.25',
+    'ADMIN_PROXY_IP'    : '109.194.16.10',
+    'NS2_IP'            : '109.194.16.4',
+    'NS4_IP'            : '109.194.17.5',
+    'RADIUS1_IP'        : '109.194.16.37',
+    'RADIUS2_IP'        : '109.194.16.38',
+    'radius_port'       : '2030',
+    'acct_port'         : '2050',
+    'TIME_ZONE'         : '8',
+    'SNMP_RW_COMMUNITY' : 'rWIrkuz',
+    'MGMT_VLAN'         : '99',
 }

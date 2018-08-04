@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('network', '0006_auto_20180305_1009'),
+        ('network', '0001_squashed_0082_auto_20180725_1706'),
         ('clients', '0001_initial'),
     ]
 

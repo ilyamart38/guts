@@ -15,20 +15,11 @@ class Campus_Form(forms.ModelForm):
         model = CAMPUS
         fields = ('prefix', 'ms', 'num_in_ms')
 
-#class Thread_Form(forms.ModelForm):
-#    class Meta:
-#        model = THREAD
-#        fields = ('campus', 'num_in_campus', 'outvlan', 'mapvlan')
-
 class SubnetInThread_Form(forms.ModelForm):
     class Meta:
         model = SUBNET
         fields = ('network', 'thread')
 
-#class Node_Form(forms.ModelForm):
-#    class Meta:
-#        model = ACCESS_NODE
-#        fields = ('address', 'thread')
 
 class New_Access_Switch_Form(forms.ModelForm):
     class Meta:

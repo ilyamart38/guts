@@ -3,22 +3,26 @@
 {% block title %} | Редактирование/создание узла доступа.{% endblock %}
 
 {% block content %}
-			{% if user.is_authenticated %}
-				<div class = "container ">
-					<h2> Редактирование/создание узла доступа.</h2>
-					<form method="POST" class="post-form">
+            {% if user.is_authenticated %}
+                <div class = "container ">
+                    {% if thread %}
+                        <h2> Создание оздание узла доступа, для нитки {{ thread }}.</h2>
+                    {% else %}
+                        <h2> Редактирование узла доступа {{ access_node }}.</h2>
+                    {% endif %}
+                    <form method="POST" class="post-form">
                         {% csrf_token %}
-						{{ form.as_p }}
-						<button type="submit" class="save btn btn-default">Save</button>
-					</form>
+                        {{ form.as_p }}
+                        <button type="submit" class="save btn btn-default">Save</button>
+                    </form>
 
-				</div>
-			{% endif %}
+                </div>
+            {% endif %}
 {% endblock %}
 
 {% block right_col %}
-				<div class="well">
-				</div>
+                <div class="well">
+                </div>
 {% endblock %}
 
 

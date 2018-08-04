@@ -13,23 +13,23 @@
 {% endblock %}
 
 {% block content %}
-			{% if user.is_authenticated %}
-				<div class = "container ">
-					<h2> Редактирование подсети. </h2>
-					<form method="POST" class="post-form">{% csrf_token %}
+            {% if user.is_authenticated %}
+                <div class = "container ">
+                    <h2> Создание подсети для нитки {{ thread }}. </h2>
+                    <form method="POST" class="post-form">{% csrf_token %}
                         {% csrf_token %}
-						{{ form.as_p }}
-						<button type="submit" class="save btn btn-default">Save</button>
-					</form>
+                        {{ form.as_p }}
+                        <button type="submit" class="save btn btn-default">Save</button>
+                    </form>
 
-				</div>
-			{% endif %}
+                </div>
+            {% endif %}
 {% endblock %}
 
 {% block right_col %}
-				<div class="well">
-					<p>ADS</p>
-				</div>
+                <div class="well">
+                    <p>ADS</p>
+                </div>
 {% endblock %}
 
 
