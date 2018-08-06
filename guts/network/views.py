@@ -387,7 +387,8 @@ class NewAccessSwitchInNode(LoginRequiredMixin, CreateView):
     template_name = 'network/new_access_switch_in_node.html'
     model = ACCESS_SWITCH
     fields = [
-        'access_node', 
+        'access_node',
+        'stp_root',
         'sw_model', 
         'ip', 
     ]
@@ -450,21 +451,22 @@ class AccessSwitchView(LoginRequiredMixin, generic.DetailView):
         if form_set.is_valid():
             #print('OK')
             for form in form_set:
-                form.save()
-            # после сохранения всех настроек на портах, необходимо обновить настройки всех магистральных портов в нитке
-            uplink_ports_in_thread = PORT_OF_ACCESS_SWITCH.objects.filter(
-                port_type__in = PORT_TYPE.objects.filter(id__in = (0,1)),
-                access_switch__in = ACCESS_SWITCH.objects.filter(
-                    access_node__in = ACCESS_NODE.objects.filter(thread = ACCESS_SWITCH.objects.get(id = access_switch_id).access_node.thread)
-                )
-            )
-            #print(uplink_ports_in_thread)
-            for port in uplink_ports_in_thread:
-                port.save_uplink()
-            #При любых изменениях в настройках коммутатора стераем значение cfg_file, кроме случая когда мы задаем cfg_file
-            access_switch = ACCESS_SWITCH.objects.get(id=access_switch_id)
-            access_switch.cfg_file = ''
-            access_switch.save()
+                if form['port_type'].value() not in ('0', '1'):
+                    form.save()
+            ## после сохранения всех настроек на портах, необходимо обновить настройки всех магистральных портов в нитке
+            #uplink_ports_in_thread = PORT_OF_ACCESS_SWITCH.objects.filter(
+            #    port_type__in = PORT_TYPE.objects.filter(id__in = (0,1)),
+            #    access_switch__in = ACCESS_SWITCH.objects.filter(
+            #        access_node__in = ACCESS_NODE.objects.filter(thread = ACCESS_SWITCH.objects.get(id = access_switch_id).access_node.thread)
+            #    )
+            #)
+            ##print(uplink_ports_in_thread)
+            #for port in uplink_ports_in_thread:
+            #    port.save_uplink()
+            ##При любых изменениях в настройках коммутатора стираем значение cfg_file, кроме случая когда мы задаем cfg_file
+            #access_switch = ACCESS_SWITCH.objects.get(id=access_switch_id)
+            #access_switch.cfg_file = ''
+            #access_switch.save()
             return redirect('access_switch', pk=access_switch_id)
         else:
             #print('NE OK!!!')
@@ -500,7 +502,9 @@ class AccessSwitchDelete(DeleteView):
 # Клас представления для изменения коммутатора доступа
 class AccessSwitchModel(LoginRequiredMixin, UpdateView):
     model = ACCESS_SWITCH
-    fields = ('sw_model',)
+    fields = (
+        'stp_root',
+        'sw_model',)
     # Для корректного отображения списка МГС влевой части добавляем контекст mgs_list в представление
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

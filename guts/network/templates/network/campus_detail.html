@@ -70,16 +70,25 @@
                                                     <a href="{% url 'access_node_edit' access_node.id %}"><span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить узел '{{ access_node }}'"></span></a>
                                                     <a href="{% url 'access_node_delete' access_node.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить узел {{ access_node }}"></span></a>
                                                 </th>
+                                                <th>
+                                                </th>
                                             <tr>
                                         </thead>
                                         {% for access_switch in access_node.access_switch_set.all %}
                                             <tr>
                                                 <td>
                                                     <a href="{% url 'access_switch' access_switch.id %}">{{ access_switch }}</a>
+                                                    <a href="{% url 'access_switch_mdoel' access_switch.id %}"><span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить модель коммутатора '{{ access_switch }}'"></span></a>
                                                     <a href="{% url 'access_switch_delete' access_switch.id %}"><span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить коммутатор {{ access_switch }}"></span></a>                                                </td>
                                                 <td>
                                                     {{ access_switch.sw_model }}
-                                                    <a href="{% url 'access_switch_mdoel' access_switch.id %}"><span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить модель коммутатора '{{ access_switch }}'"></span></a>
+                                                </td>
+                                                <td>
+                                                    {% if access_switch.stp_root %}
+                                                        <i class="fa fa-check-circle-o"></i>
+                                                    {% else %}
+                                                        <i class="fa fa-circle-o"></i>
+                                                    {% endif %}
                                                 </td>
                                             </tr>
                                         {% endfor %}

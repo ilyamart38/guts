@@ -47,7 +47,7 @@ enable telnet 23
 # Vlan
 disable asymmetric_vlan
 config vlan default delete 1-28
-config vlan default add untagged 25-28 advertisement disable
+config vlan default add untagged <BACKBON_PORTS> advertisement disable
 <CONF_VLAN>
 config ipif System vlan <MGMT_VLAN>
 enable pvid auto_assign
@@ -82,12 +82,12 @@ config stp nni_bpdu_addr dot1d
 config stp fbpdu enable
 config stp ports <NOT_BACKBON_PORTS> externalcost auto edge true restricted_tcn true restricted_role true p2p auto state disable priority 128 fbpdu disable
 config stp ports <BACKBON_PORTS> externalcost auto edge false restricted_tcn false restricted_role false p2p auto state enable priority 128 fbpdu enable
-config stp mst_config_id name <THREAD-NUM> revision_level 0
+config stp mst_config_id name <THREAD_NUM> revision_level 0
 config stp trap new_root disable
 config stp trap topo_change disable
 
 # traffic segmentation
-<CFG_TRAF_SEGMENTATION>
+<CONF_TRAF_SEGMENTATION>
 
 # LLDP
 enable lldp
