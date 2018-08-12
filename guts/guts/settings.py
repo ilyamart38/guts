@@ -25,9 +25,9 @@ SECRET_KEY = '9#)=9nl5ibw)uogfb_#*5avkt#agz7pmz4(8_^^%zg5kq^_lw('
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["10.33.33.68",
+ALLOWED_HOSTS = [
                  "127.0.0.1",
-                 "10.111.31.19",
+                 "irk-cus.cf",
 ]
 
 
@@ -62,7 +62,9 @@ ROOT_URLCONF = 'guts.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['templates'],
+        'DIRS': [
+            'templates',
+            os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
