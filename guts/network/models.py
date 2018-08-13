@@ -105,9 +105,9 @@ class MGS(models.Model):
     lag = models.ForeignKey(LAG, on_delete = models.SET_NULL, blank=True, null=True)
     # отдельные поля для хранения информации о количестве кампусов/узлов/коммутаторов, 
     # которые будут обновляться раз в сутки, для этого еще поле с временем последнего обновления
-    campus_counter = models.IntegerField(default = 0, verbose_name="Количество кампусов в МГС", help_text = "Значение обновляется автоматически при вызове метода update_counts()",         editable=False)
-    node_counter = models.IntegerField(default = 0, verbose_name="Количество узлов в МГС", help_text = "Значение обновляется автоматически при вызове метода update_counts()",              editable=False)
-    switche_counter = models.IntegerField(default = 0, verbose_name="Количество коммутаторов в МГС", help_text = "Значение обновляется автоматически при вызове метода update_counts()",    editable=False)
+    campus_counter = models.IntegerField(default = 0, verbose_name="Количество кампусов в МГС", help_text = "Значение обновляется автоматически при вызове метода update_counts()") #,         editable=False)
+    node_counter = models.IntegerField(default = 0, verbose_name="Количество узлов в МГС", help_text = "Значение обновляется автоматически при вызове метода update_counts()") #,              editable=False)
+    switche_counter = models.IntegerField(default = 0, verbose_name="Количество коммутаторов в МГС", help_text = "Значение обновляется автоматически при вызове метода update_counts()") #,    editable=False)
     last_update = models.DateTimeField(default=timezone.now, verbose_name='Время последнего обновления данных по МГС',                                                                                            editable=False)
     # Представление МГС
     def __str__(self):
@@ -129,7 +129,7 @@ class MGS(models.Model):
         self.campus_counter = campuss_count
         self.node_counter = node_count
         self.switche_counter = sw_count
-        self.last_update = timezone.now
+        self.last_update = timezone.now()
         self.save()
     
 

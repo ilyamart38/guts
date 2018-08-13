@@ -26,7 +26,9 @@ class IndexView(LoginRequiredMixin, generic.ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         for mgs in context['object_list']:
-            if datetime.now().day-mgs.last_update.day > 1:
+            state_age = int(datetime.now().day-mgs.last_update.day)
+            print(mgs, state_age)
+            if abs(state_age) > 1:
                 mgs.update_counts()
         # Количество посещений представления CampusView
         context['num_visits'] = self.request.session.get('num_visits', 0)
