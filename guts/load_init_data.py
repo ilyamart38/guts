@@ -354,6 +354,7 @@ if __name__ == "__main__":
     for switch in switchs:
         analiz_switch(switch)
         if iterration > 10:
+            pass
             sys.exit()
         else:
             iterration += 1
