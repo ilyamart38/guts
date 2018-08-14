@@ -289,9 +289,9 @@ def analiz_switch(switch):
                             # После создания нужной МГС делаем рекурсию
                             analiz_switch(switch)
                             
-        ###            else:
-        ###                sw = ACCESS_SWITCH.objects.get(ip=switch['ip'])
-        ###                set_model_sw(sw,switch['type'])
+                    else:
+                        sw = ACCESS_SWITCH.objects.get(ip=switch['ip'])
+                        set_model_sw(sw,switch['type'])
         ###            
         ###            return str(komm_id)
                         
