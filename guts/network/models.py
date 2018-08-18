@@ -580,6 +580,7 @@ class ACCESS_SWITCH(models.Model):
 
     def cfg_download(self):
         download_text = ''
+        print('start cfg')
         if self.sw_model.cfg_download_commands:
             # если файл конфигурации не генерировался после последних изменений, то его необходимо сгенерировать
             #if self.cfg_file == '':
