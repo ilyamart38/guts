@@ -453,8 +453,15 @@ class AccessSwitchView(LoginRequiredMixin, generic.DetailView):
         if form_set.is_valid():
             #print('OK')
             for form in form_set:
-                if form['port_type'].value() not in ('0', '1'):
+                form_type = int(form['port_type'].value())
+                if form_type not in (0, 1):
                     form.save()
+                else:
+                    id = form['id'].value()
+                    if PORT_OF_ACCESS_SWITCH.objects.get(id=id).port_type.id != form_type:
+                        print(PORT_OF_ACCESS_SWITCH.objects.get(id=id).port_type.id, form['port_type'].value())
+                        form.save()
+                    
             ## после сохранения всех настроек на портах, необходимо обновить настройки всех магистральных портов в нитке
             #uplink_ports_in_thread = PORT_OF_ACCESS_SWITCH.objects.filter(
             #    port_type__in = PORT_TYPE.objects.filter(id__in = (0,1)),
