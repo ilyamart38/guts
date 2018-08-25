@@ -1044,7 +1044,7 @@ def dlink_cfg(access_switch):
                 CONF_VLAN += 'create vlan %s tag %s\n' % (vlan, vlan)
         for port in access_switch.port_of_access_switch_set.all():
             if port.u_vlan not in [0,1]:
-                CONF_VLAN += 'conf vlan %s add untagged %s advertisement disable\n' % (vlan, port.num_in_switch)
+                CONF_VLAN += 'conf vlan %s add untagged %s advertisement disable\n' % (port.u_vlan, port.num_in_switch)
             for vlan in net_lib.interval_to_arr(port.t_vlans):
                 if vlan not in [0,1]:
                     CONF_VLAN += 'conf vlan %s add tagged %s advertisement disable\n' % (vlan, port.num_in_switch)

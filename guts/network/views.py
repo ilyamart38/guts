@@ -27,7 +27,7 @@ class IndexView(LoginRequiredMixin, generic.ListView):
         context = super().get_context_data(**kwargs)
         for mgs in context['object_list']:
             state_age = int(datetime.now().day-mgs.last_update.day)
-            print(mgs, state_age)
+            #print(mgs, state_age)
             if abs(state_age) > 1:
                 mgs.update_counts()
         # Количество посещений представления CampusView
@@ -47,8 +47,9 @@ class MgsView(LoginRequiredMixin, generic.DetailView):
         mgs = context['object']
         for ms in mgs.ms_set.all():
             for campus in ms.campus_set.all():
-                if timezone.now().hour-campus.last_update.hour > 1:
-                #    print(datetime.now().hour, campus.last_update.hour)
+                state_age = int(datetime.now().day-campus.last_update.day)
+                #print(campus, state_age)
+                if abs(state_age) > 1:
                     campus.update_counts()
                 #else:
                 #    print('OK', datetime.now().hour, campus.last_update.hour)
