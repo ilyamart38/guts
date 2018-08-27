@@ -45,14 +45,14 @@ class MgsView(LoginRequiredMixin, generic.DetailView):
         context = super().get_context_data(**kwargs)
         context['mgs_list'] = MGS.objects.all()
         mgs = context['object']
-        for ms in mgs.ms_set.all():
-            for campus in ms.campus_set.all():
-                state_age = int(datetime.now().day-campus.last_update.day)
-                #print(campus, state_age)
-                if abs(state_age) > 1:
-                    campus.update_counts()
-                #else:
-                #    print('OK', datetime.now().hour, campus.last_update.hour)
+        #for ms in mgs.ms_set.all():
+        #    for campus in ms.campus_set.all():
+        #        state_age = int(datetime.now().day-campus.last_update.day)
+        #        #print(campus, state_age)
+        #        if abs(state_age) > 1:
+        #            campus.update_counts()
+        #        #else:
+        #        #    print('OK', datetime.now().hour, campus.last_update.hour)
                     
         return context
 
@@ -63,6 +63,7 @@ class CampusView(LoginRequiredMixin, generic.DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['mgs_list'] = MGS.objects.all()
+        context['object'].update_counts()
         return context
 
 # Клас представления для нитки    

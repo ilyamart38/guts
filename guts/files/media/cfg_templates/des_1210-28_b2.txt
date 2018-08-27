@@ -292,6 +292,7 @@ disable dhcpv6_relay
 
 # GVRP
 disable gvrp
+<GVRP_PVID>
 
 # Loopback Detection
 enable loopdetect

@@ -188,7 +188,7 @@ class CAMPUS(models.Model):
     
     # Процедура обновления счетчиков по МГС
     def update_counts(self):
-        print('update %s' % self)
+        #print('update %s' % self)
         node_count = 0
         sw_count = 0
         for thread in self.thread_set.all():
@@ -197,9 +197,8 @@ class CAMPUS(models.Model):
                 sw_count += node.access_switch_set.count()
         self.node_counter = node_count
         self.switche_counter = sw_count
-        print('>', self.last_update)
         self.last_update = timezone.now()
-        print('>>', self.last_update)
+        #print('>>', self.last_update)
         self.save()
         
     def save(self, *args, **kwargs):
@@ -263,6 +262,9 @@ class THREAD(models.Model):
         else:
             super(THREAD, self).save(*args, **kwargs)
         
+        # Обновляем счетчики по кампусу
+        self.campus.update_counts()
+
     # Представление нитки
     def __str__(self):
         return "%s-%s" % (self.campus, self.num_in_campus)
@@ -573,6 +575,9 @@ class ACCESS_SWITCH(models.Model):
                     self.network = net
                     break
             super(ACCESS_SWITCH, self).save(*args, **kwargs)
+        
+        # Обновляем счетчики по кампусу
+        self.access_node.thread.campus.update_counts()
 
     def get_absolute_url(self):
         from django.urls import reverse
@@ -660,7 +665,7 @@ class ACCESS_SWITCH(models.Model):
 
     #uplink_ports
     def uplink_ports(self):
-        return self.port_of_access_switch_set.exclude(
+        return self.port_of_access_switch_set.filter(
                             port_type__in=PORT_TYPE.objects.filter(
                                     connection_type = 0
                                     )
@@ -668,7 +673,7 @@ class ACCESS_SWITCH(models.Model):
 
     #downlink_ports
     def downlink_ports(self):
-        return self.port_of_access_switch_set.exclude(
+        return self.port_of_access_switch_set.filter(
                             port_type__in=PORT_TYPE.objects.filter(
                                     connection_type__in = [1,3,4]
                                     )
@@ -676,6 +681,14 @@ class ACCESS_SWITCH(models.Model):
 
     #gag_ports (порты для сигнализаторов и неисправные порты)
     def gag_ports(self):
+        return self.port_of_access_switch_set.filter(
+                            port_type__in=PORT_TYPE.objects.filter(
+                                    connection_type__in = [5, 99]
+                                    )
+                            )
+    
+    #not_gag_ports (все порты без сигнализаторов и неисправных портов)
+    def not_gag_ports(self):
         return self.port_of_access_switch_set.exclude(
                             port_type__in=PORT_TYPE.objects.filter(
                                     connection_type__in = [5, 99]
@@ -748,7 +761,7 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
                 t_vlans=list(vlans)
                 #print(t_vlans)
                 t_vlans += net_lib.interval_to_arr(GUTS_CONSTANTS['PERMANENT_VLANS'])
-                print(self, t_vlans)
+                #print(self, t_vlans)
                 self.t_vlans = net_lib.arr_to_interval(t_vlans)
             super(PORT_OF_ACCESS_SWITCH, self).save(*args, **kwargs)
         
@@ -1037,7 +1050,9 @@ def dlink_cfg(access_switch):
         
         ##############################################################################################
         #<CONF_VLAN>                Настройи вланов
+        #<GVRP_PVID>                Настройки pvid
         CONF_VLAN = ''
+        GVRP_PVID = ''
         used_vlans = access_switch.used_vlans()
         for vlan in sorted(used_vlans.keys()):
             if vlan not in [0,1]:
@@ -1045,11 +1060,13 @@ def dlink_cfg(access_switch):
         for port in access_switch.port_of_access_switch_set.all():
             if port.u_vlan not in [0,1]:
                 CONF_VLAN += 'conf vlan %s add untagged %s advertisement disable\n' % (port.u_vlan, port.num_in_switch)
+                GVRP_PVID += 'config gvrp %s state disable ingress_checking enable acceptable_frame admit_all pvid %s\n' % (port.num_in_switch, port.u_vlan)
             for vlan in net_lib.interval_to_arr(port.t_vlans):
                 if vlan not in [0,1]:
                     CONF_VLAN += 'conf vlan %s add tagged %s advertisement disable\n' % (vlan, port.num_in_switch)
             
         template = re.sub('<CONF_VLAN>', str(CONF_VLAN), template)
+        template = re.sub('<GVRP_PVID>', str(GVRP_PVID), template)
         
         ##############################################################################################
         #<CONF_TRAF_SEGMENTATION>   Настройки traffic segmentation
@@ -1057,13 +1074,23 @@ def dlink_cfg(access_switch):
         #config traffic_segmentation <uplink_ports> forward_list <downlink_ports>
         #config traffic_segmentation <gag_ports> forward_list null
         uplink_ports_list = list(access_switch.uplink_ports().values_list('num_in_switch', flat = True))
-        downlink_ports_list = list(access_switch.downlink_ports().values_list('num_in_switch', flat = True))
-        gag_ports_list = list(access_switch.gag_ports().values_list('num_in_switch', flat = True))
         UPLINK_PORTS = net_lib.arr_to_interval(uplink_ports_list)
+        
+        downlink_ports_list = list(access_switch.downlink_ports().values_list('num_in_switch', flat = True))
         DOWNLINK_PORTS = net_lib.arr_to_interval(downlink_ports_list)
+        
+        gag_ports_list = list(access_switch.gag_ports().values_list('num_in_switch', flat = True))
         GAG_PORTS = net_lib.arr_to_interval(gag_ports_list)
+        
+        not_gag_ports_list = list(access_switch.not_gag_ports().values_list('num_in_switch', flat = True))
+        NOT_GAG_PORTS = net_lib.arr_to_interval(not_gag_ports_list)
+        
+        all_ports_list = list(access_switch.port_of_access_switch_set.values_list('num_in_switch', flat = True))
+        ALL_PORTS = net_lib.arr_to_interval(all_ports_list)
+        
         CONF_TRAF_SEGMENTATION = "config traffic_segmentation %s forward_list %s\n" % (DOWNLINK_PORTS, UPLINK_PORTS)
-        CONF_TRAF_SEGMENTATION += "config traffic_segmentation %s forward_list %s\n" % (GAG_PORTS, DOWNLINK_PORTS)
+        CONF_TRAF_SEGMENTATION += "config traffic_segmentation %s forward_list %s\n" % (UPLINK_PORTS, NOT_GAG_PORTS)
+        
         if GAG_PORTS != '':
             CONF_TRAF_SEGMENTATION += "config traffic_segmentation %s forward_list null\n" % GAG_PORTS
         
