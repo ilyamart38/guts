@@ -1060,7 +1060,7 @@ def dlink_cfg(access_switch):
         for port in access_switch.port_of_access_switch_set.all():
             if port.u_vlan not in [0,1]:
                 CONF_VLAN += 'conf vlan %s add untagged %s advertisement disable\n' % (port.u_vlan, port.num_in_switch)
-                GVRP_PVID += 'config gvrp %s state disable ingress_checking enable acceptable_frame admit_all pvid %s\n' % (port.num_in_switch, port.u_vlan)
+                GVRP_PVID += 'config gvrp %s pvid %s\n' % (port.num_in_switch, port.u_vlan)
             for vlan in net_lib.interval_to_arr(port.t_vlans):
                 if vlan not in [0,1]:
                     CONF_VLAN += 'conf vlan %s add tagged %s advertisement disable\n' % (vlan, port.num_in_switch)
