@@ -428,14 +428,15 @@ class SW_MODEL(models.Model):
     title = models.CharField(max_length = 100, verbose_name = 'Название модели')
     eqm_type = models.CharField(max_length = 100, default = '', verbose_name = 'Тип объекта в eqm')
     fw_version = models.CharField(max_length = 100, blank = True, verbose_name = 'Рекомендованная версия ПО')
-    fw_file = models.CharField(max_length = 100, blank = True, verbose_name = 'Файл прошивки')
+    #fw_file = models.CharField(max_length = 100, blank = True, verbose_name = 'Файл прошивки')
+    fw_file = models.FileField(upload_to = 'fw', verbose_name = 'Файл прошивки')
     fw_update_commands = models.TextField(blank = True, verbose_name = 'Описание процесса обновления прошивки')
     hw_version = models.CharField(max_length = 100, blank = True, verbose_name = 'HW версия')
     ports_count = models.IntegerField(default = 0, verbose_name = 'Количество портов')
     ports_names = models.CharField(max_length = 500, blank = True, verbose_name = 'Названия портов в конфиге')
     ports_types = models.CharField(max_length = 200, blank = True, verbose_name = 'Типы портов по умолчанию', help_text = create_help_text_for_type_ports())
     #cfg_template = models.CharField(max_length = 100, blank = True)
-    cfg_template = models.FileField(upload_to = 'cfg_templates')
+    cfg_template = models.FileField(upload_to = 'cfg_templates', verbose_name = 'Шаблон конфигурации')
     
     cfg_download_commands = models.TextField(blank = True, verbose_name = 'Описание процесса загрузки конфигурации')
     # Представление модели коммутатора
@@ -465,7 +466,7 @@ class SW_MODEL(models.Model):
                     update_text += (line)
             fw_version = "<b>%s</b>" % self.fw_version
             update_text = re.sub("<FW>", fw_version, update_text)
-            update_text = re.sub("<FW_FILE>", self.fw_file, update_text)
+            update_text = re.sub("<FW_FILE>", "<a href='%s'>%s</a>" % (self.fw_file.url, self.fw_file.name), update_text)
         else:
             update_text = 'Для данной модели коммутатора нет описания процесса обновления прошивки!'
         return update_text
