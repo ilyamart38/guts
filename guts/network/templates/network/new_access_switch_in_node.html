@@ -1,13 +1,14 @@
 {% extends "__base.html" %}
 
-{% block left_col %}
-
-{% endblock %}
+{% block title %} | Редактирование/создание узла доступа.{% endblock %}
 
 {% block content %}
-				<h1>Добавить новый коммутатор в узел '{{ access_node }}' </h1>
+                <h1>'{{ access_node }}' </br>
+                Добавление нового коммутатора! </h1>
                 <form method="POST" class="post-form">{% csrf_token %}
-                    {{ form.as_p }}
+                    <table class='table'>
+                        {{ form.as_table }}
+                    </table>
                     <button type="submit" class="save btn btn-default">Save</button>
                 </form>
 {% endblock %}

@@ -494,11 +494,13 @@ class ACCESS_SWITCH(models.Model):
     
     access_node = models.ForeignKey(ACCESS_NODE, on_delete = models.CASCADE)
     sw_model = models.ForeignKey(SW_MODEL, on_delete = models.SET_NULL, blank=True, null=True)
-    ip = models.GenericIPAddressField(protocol = 'IPv4', unique=True)
+    ip = models.GenericIPAddressField(protocol = 'IPv4', unique=True, verbose_name = 'ip-адрес')
     network = models.ForeignKey(SUBNET, on_delete = models.SET_NULL, blank=True, null=True, editable=False)
     stp_root = models.BooleanField(default=False, verbose_name = 'STP_ROOT')
-    #cfg_file = models.CharField(max_length = 200, blank = True, verbose_name = 'Файл текущей конфигурации.', help_text = 'Значение поля очищается при каждых изменениях коммутатора')
+    mac = models.CharField(max_length = 17, blank = True, verbose_name = 'mac-адрес')
+    sn =  models.CharField(max_length = 100, blank = True, verbose_name = 'Серийный номер')
     cfg_file = models.FileField(upload_to = 'cfg_switches')
+    
     
     def clean(self):
         # В зависимости от того создается новый коммутатор или обновляется существующий
@@ -515,6 +517,7 @@ class ACCESS_SWITCH(models.Model):
         address = self.access_node.address
         ip = self.ip
         return "%s (%s)" % (address, ip)
+
 
     def save(self, *args, **kwargs):
         # если происходит обновление данных существующего коммутатора

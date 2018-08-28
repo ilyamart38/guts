@@ -57,8 +57,8 @@ urlpatterns = [
     url(r'^access_switch/(?P<pk>[0-9]+)/$',                                                 views.AccessSwitchView.as_view(),         name='access_switch'),
     # адрес для удаления коммутатора доступа: /network/access_switch/1/delete/
     url(r'^access_switch/(?P<pk>[0-9]+)/delete/$',                                            views.AccessSwitchDelete.as_view(),       name='access_switch_delete'),
-    # адрес для изменения модели коммутатора доступа: /network/access_switch/1/change_model/
-    url(r'^access_switch/(?P<pk>[0-9]+)/change_model/$',                                            views.AccessSwitchModel.as_view(),       name='access_switch_mdoel'),
+    # адрес для изменения основных настроек коммутатора доступа (модель/mac/sn/stp_root): /network/access_switch/1/edit/
+    url(r'^access_switch/(?P<pk>[0-9]+)/edit/$',                                            views.AccessSwitchModel.as_view(),       name='access_switch_edit'),
     # адрес для генерации конфигурации коммутатора доступа: /network/access_switch/1/change_model/
     url(r'^access_switch/(?P<pk>[0-9]+)/cfg_gen/$',                                            views.AccessSwitchCfgGen.as_view(),       name='access_switch_cfg_gen'),
 

@@ -393,8 +393,10 @@ class NewAccessSwitchInNode(LoginRequiredMixin, CreateView):
     fields = [
         'access_node',
         'stp_root',
-        'sw_model', 
         'ip', 
+        'mac',
+        'sn',
+        'sw_model', 
     ]
     
     def get_form(self):
@@ -515,6 +517,8 @@ class AccessSwitchModel(LoginRequiredMixin, UpdateView):
     model = ACCESS_SWITCH
     fields = (
         'stp_root',
+        'mac',
+        'sn',
         'sw_model',)
     # Для корректного отображения списка МГС влевой части добавляем контекст mgs_list в представление
     def get_context_data(self, **kwargs):
