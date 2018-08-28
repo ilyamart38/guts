@@ -33,7 +33,7 @@ config serial_port auto_logout 10_minutes
 config gratuitous_arp send ipif_status_up disable
 config gratuitous_arp send dup_ip_detected disable
 config gratuitous_arp learning disable
-config gratuitous_arp send periodically interval 300
+config gratuitous_arp send periodically interval 60
 
 # Arp Aging Time
 config arp_aging time 2

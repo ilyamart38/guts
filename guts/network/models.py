@@ -983,6 +983,10 @@ def dlink_cfg(access_switch):
         MGMT_LONG_MASK = str(ipaddress.ip_network(access_switch.network).netmask)
         template = re.sub('<MGMT_LONG_MASK>', MGMT_LONG_MASK, template)
         
+        #<MGMT_SHORT_MASK>
+        MGMT_SHORT_MASK = str(ipaddress.ip_network(access_switch.network).prefixlen)
+        template = re.sub('<MGMT_SHORT_MASK>', MGMT_SHORT_MASK, template)
+        
         ##############################################################################################
         #<GW>                   ip-адрес шлюза поумолчанию
         GW = access_switch.network.gw
