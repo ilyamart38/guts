@@ -13,6 +13,7 @@
                 </h1>
             </td>
             <td>
+                <a href="{% url 'access_switch_edit' access_switch.id %}"> <span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить модель коммутатора '{{ access_switch }}'"></span></a>
                 <a href="{% url 'access_switch_delete' access_switch.id %}"> <span style="color:red" class="glyphicon glyphicon-remove small" title="Удалить коммутатор {{ access_switch }}"></span></a>
             </td>
         </tr>
@@ -38,7 +39,6 @@
             </td>
             <td class='td_val'>
                 {{ access_switch.sw_model }}
-                <a href="{% url 'access_switch_mdoel' access_switch.id %}"> <span style="color:green" class="glyphicon glyphicon-pencil small" title="Изменить модель коммутатора '{{ access_switch }}'"></span></a>
             </td>
             <td class='td_var'>
                 out/map: 

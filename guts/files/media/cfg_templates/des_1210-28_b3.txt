@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------
 #               DES-1210-28/ME Fast Ethernet Switch Configuration
 #
-#                           Firmware: Build 6.10.E007
+#                           Firmware: Build 10.04.E007
 #         Copyright(C) 2010 D-Link Corporation. All rights reserved.
 #------------------------------------------------------------------------
 
@@ -29,14 +29,8 @@ config command_prompt default
 config serial_port baud_rate 9600
 config serial_port auto_logout 10_minutes
 
-# Gratuitous Arp
-config gratuitous_arp send ipif_status_up disable
-config gratuitous_arp send dup_ip_detected disable
-config gratuitous_arp learning disable
-config gratuitous_arp send periodically interval 300
-
 # Arp Aging Time
-config arp_aging time 2
+config arp_aging time 5
 
 # FDB Aging Time
 config fdb aging_time 300
@@ -49,7 +43,6 @@ disable asymmetric_vlan
 config vlan default delete 1-28
 config vlan default add untagged <BACKBON_PORTS> advertisement disable
 <CONF_VLAN>
-config ipif System vlan <MGMT_VLAN>
 enable pvid auto_assign
 
 # Multicast Filter
@@ -70,8 +63,21 @@ disable autoconfig
 config autoconfig timeout 50
 disable autoimage
 
+# Multi Interface
+config ipif System vlan <MGMT_VLAN>
+
 # Static Route
 create iproute default <GW> 1 
+
+# Gratuitous Arp
+config gratuitous_arp send ipif_status_up disable
+config gratuitous_arp send dup_ip_detected disable
+config gratuitous_arp learning disable
+config gratuitous_arp send periodically ipif System interval 0
+
+# QinQ
+disable qinq
+config qinq ports 1-28 role nni outer_tpid 0x88a8 trust_cvid disable vlan_translation disable
 
 # STP
 enable stp
@@ -109,7 +115,7 @@ config lldp ports 1-28 dot1_tlv_protocol_identity stp enable
 config lldp ports 1-28 dot3_tlvs mac_phy_configuration_status link_aggregation maximum_frame_size enable
 
 # QoS
-config scheduling_mechanism strict
+config scheduling_mechanism 1st3wrr
 config scheduling 0 weight 1
 config scheduling 1 weight 2
 config scheduling 2 weight 4
@@ -189,7 +195,6 @@ config dscp_mapping dscp_value 62 class 0
 config dscp_mapping dscp_value 63 class 0
 config cos mapping port 1-28 none
 config cos mapping port 1-28 802.1p
-config cos mapping port 1-28 dscp
 config mgmt_pkt_priority 7
 config cos tos value 0 class 0
 config cos tos value 1 class 0
@@ -213,6 +218,7 @@ create access_profile ethernet destination_mac ffffffffffff  profile_id 5
 create access_profile ethernet source_mac ffffff000000  ethernet_type profile_id 10
 create access_profile ip udp dst_port_mask 0xffff profile_id 15
 create access_profile ip source_ip_mask 255.255.255.0 profile_id 16
+create access_profile ip source_ip_mask 255.255.0.0 profile_id 17
 create access_profile ethernet ethernet_type profile_id 20
 create access_profile ethernet destination_mac ffffffffffff  profile_id 35
 create access_profile ethernet source_mac 000000000000  profile_id 40
@@ -238,14 +244,13 @@ config access_profile profile_id 40 add access_id 2 ethernet source_mac 00-00-00
 config access_profile profile_id 15 add access_id 1 ip udp dst_port 67 dst_port_mask 0xffff port 1-28 permit
 config access_profile profile_id 16 add access_id 1 ip source_ip 10.71.255.0 source_ip_mask 255.255.255.0 port 1-28 permit
 config access_profile profile_id 16 add access_id 2 ip source_ip 10.71.251.0 source_ip_mask 255.255.255.0 port 1-28 permit
+config access_profile profile_id 17 add access_id 1 ip source_ip 172.21.0.0 source_ip_mask 255.255.0.0 port 1-28 permit
 enable cpu_interface_filtering
 
 # SNMP
 enable snmp
 disable community_encryption
-create snmp user ReadOnly ReadOnly v1
 create snmp user ReadOnly ReadOnly v2c
-create snmp user ReadWrite ReadWrite v1
 create snmp user ReadWrite ReadWrite v2c
 create snmp group ReadOnly v1 read_view ReadWrite notify_view ReadWrite
 create snmp group ReadOnly v2c read_view ReadWrite notify_view ReadWrite
@@ -267,8 +272,8 @@ enable snmp IMPB_violation traps
 enable snmp LBD traps
 enable snmp DHCP_screening traps
 enable snmp duplicate_IP_detected traps
-disable snmp DHCPv6_screening traps
-disable snmp ICMPv6_RA_all_node traps
+enable snmp DHCPv6_screening traps
+enable snmp ICMPv6_RA_all_node traps
 disable snmp DULD traps
 
 # IPv6 Neighbor_cache
@@ -284,10 +289,13 @@ config mac_notification ports <BACKBON_PORTS> disable
 config sntp primary <NS4_IP> secondary <NS2_IP> poll-interval 720
 enable sntp
 config time_zone operator + hour <TIME_ZONE> minute 0
+config dst repeat s_mth 1 s_week 1 s_day sun s_time 00:00 e_mth 1 e_week 1 e_day sun e_time 00:00 offset 60
+config dst annual s_mth 1 s_date 1 s_time 00:00 e_mth 1 e_date 1 e_time 00:00 offset 60
 config dst disable
 
 # DHCP_RELAY
 disable dhcp_relay
+disable dhcp_local_relay
 disable dhcpv6_relay
 
 # GVRP
@@ -319,17 +327,17 @@ disable rmon
 
 # ISM vlan
 enable igmp_snooping multicast_vlan
-create igmp_snooping multicast_vlan iptv  4024
-config igmp_snooping multicast_vlan iptv  add member_port <PPPOE_PORTS>
-config igmp_snooping multicast_vlan iptv  add source_port <BACKBON_PORTS>
-config igmp_snooping multicast_vlan iptv  state enable
-config igmp_snooping multicast_vlan iptv  replace_source_ip 192.168.10.1
-config mld_snooping multicast_vlan iptv  replace_source_ipv6 none
-config igmp_snooping multicast_vlan iptv  remap_priority none
-config igmp_snooping multicast_vlan iptv  source_port_dynamical_learn state disable
-config igmp_snooping multicast_vlan iptv  replace_cvid none
-config igmp_snooping multicast_vlan_group iptv  add ipv4_range 225.0.0.1 225.0.5.254
-config igmp_snooping multicast_vlan_group iptv  add ipv4_range 225.0.55.0 225.0.59.255
+create igmp_snooping multicast_vlan iptv 4024
+config igmp_snooping multicast_vlan iptv add member_port <PPPOE_PORTS>
+config igmp_snooping multicast_vlan iptv add source_port <BACKBON_PORTS>
+config igmp_snooping multicast_vlan iptv state enable
+config igmp_snooping multicast_vlan iptv replace_source_ip 192.168.10.1
+config mld_snooping multicast_vlan iptv replace_source_ipv6 none
+config igmp_snooping multicast_vlan iptv remap_priority none
+config igmp_snooping multicast_vlan iptv source_port_dynamical_learn state disable
+config igmp_snooping multicast_vlan iptv replace_cvid none
+config igmp_snooping multicast_vlan_group iptv add ipv4_range 225.0.0.1 225.0.5.254
+config igmp_snooping multicast_vlan_group iptv add ipv4_range 225.0.55.0 225.0.59.255
 
 # IGMP snooping
 enable igmp_snooping
@@ -343,7 +351,7 @@ config igmp_snooping vlanid 4024 state enable fast_leave disable report_suppress
 config igmp_snooping data_driven_learning vlanid 4024 state disable
 config igmp_snooping data_driven_learning vlanid 4024 aged_out enable
 config igmp_snooping querier vlanid 4024 state disable querier_version 2 last_member_query_interval 1 max_response_time 10 query_interval 125 robustness_variable 2
-config router_ports vlan_name iptv  add <BACKBON_PORTS>
+config router_ports vlan_name iptv add <BACKBON_PORTS>
 config router_ports_forbidden vlan_name iptv  add <PPPOE_PORTS>
 config igmp access_authentication ports 1-28 state disable
 
@@ -375,7 +383,7 @@ config ssh server authfail 2
 config ssh server rekey 60min
 config ssh server maxsession 1
 config ssh server contimeout 120
-config ssh authmode password disable
+config ssh authmode password enable
 config ssh authmode publickey disable
 config ssh authmode hostbased disable
 config ssh algorithm 3DES enable
@@ -399,7 +407,7 @@ config authen_login default method local
 create authen_login method_list_name RAD_LOCAL
 config authen_login method_list_name RAD_LOCAL method radius local   
 create authen_enable method_list_name default
-config authen_enable default method none    
+config authen_enable default method local    
 config authen application console login method_list_name default
 config authen application telnet login method_list_name RAD_LOCAL
 config authen application ssh login method_list_name RAD_LOCAL
@@ -408,7 +416,7 @@ config authen application console enable method_list_name default
 config authen application telnet enable method_list_name default
 config authen application ssh enable method_list_name default
 config authen application http enable method_list_name default
-config admin local_enable *@&ufIvGYtdcuZbQHe21ZsWzgyasvKCxeN1
+config admin local_enable *@&2jmj7l5rSw0yVb/vlWAYkK/YBwmwMs6D
 
 # PPPoE
 config pppoe circuit_id_insertion state disable
@@ -441,9 +449,10 @@ config port_security 1-28 admin_state disable max_learning_addr 0 lock_address_m
 
 # port
 config ports 1-24 speed auto state enable flow_control disable mdix auto learning enable
-config ports 25-26 medium_type copper speed auto state enable flow_control disable mdix auto learning enable 
-config ports 25-26 medium_type fiber speed auto state enable flow_control disable learning enable 
-config ports 27-28 speed auto state enable flow_control disable learning enable 
+config ports 25 medium_type copper speed auto state enable flow_control disable mdix auto learning enable
+config ports 25-26 medium_type fiber speed auto state enable flow_control disable learning enable
+config ports 26 medium_type copper speed auto state enable flow_control disable mdix auto learning enable
+config ports 27-28 speed auto state enable flow_control disable learning enable
 config ports 1-24 capability_advertised 10_half 10_full 100_half 100_full 
 config ports 25-28 capability_advertised 10_half 10_full 100_half 100_full 1000_full 
 <PORTS_DESCRIPTION>
@@ -493,6 +502,9 @@ disable flood_fdb
 
 # L2 Protocol Tunnel
 disable l2protocol_tunnel
+
+# Cpu Protection
+disable cpu_protect
 
 # Accounting
 create accounting method_list_name default
