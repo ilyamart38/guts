@@ -418,10 +418,23 @@ class NewAccessSwitchInNode(LoginRequiredMixin, CreateView):
 
     # определяем начальные значения формы:
     def get_initial(self):
+        initial = {}
         access_node_id = self.kwargs['access_node_id']
-        return{
-            'access_node' : access_node_id,
-        }
+        access_node = ACCESS_NODE.objects.get(id=access_node_id)
+        # Если в нитке ни у одного коммутатора не установлен параметр stp_root, необходимо установить этот параметр у создаваемого коммутатора поумолчанию
+        if not ACCESS_SWITCH.objects.filter(
+                    access_node__in = ACCESS_NODE.objects.filter(
+                        thread = access_node.thread
+                    ), stp_root = True
+                ):
+                    print("stp_root - OK")
+                    initial['stp_root'] = True
+                    
+        else:
+                    print("stp_root - NE OK")
+        initial['access_node'] = access_node_id
+        
+        return initial
     
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)

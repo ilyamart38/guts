@@ -1,0 +1,549 @@
+
+#-------------------------------------------------------------------
+#                       DES-1228/ME Configuration
+#
+#                       Firmware: Build 2.30.B009
+#        Copyright(C) 2010 D-Link Corporation. All rights reserved.
+#-------------------------------------------------------------------
+
+
+# BASIC
+
+config serial_port baud_rate 9600 auto_logout 10_minutes
+# ACCOUNT LIST
+
+create account admin dlink
+*@&cjXKrw0kWTZbbNSFU8lKq7jIqJvnWOuw
+*@&cjXKrw0kWTZbbNSFU8lKq7jIqJvnWOuw
+
+# ACCOUNT END
+
+# PASSWORD ENCRYPTION
+enable password encryption 
+config terminal_line default
+enable clipaging
+enable command logging
+
+# STORM
+
+config traffic control_trap none
+config traffic control <NOT_BACKBON_PORTS> broadcast enable multicast enable unicast disable action shutdown threshold 64 countdown 5 time_interval 5
+config traffic control <BACKBON_PORTS> broadcast disable multicast disable unicast disable action drop threshold 64 countdown 0 time_interval 5
+
+# LOOP_DETECT
+
+disable loopdetect
+config loopdetect recover_timer 0
+config loopdetect interval 1
+config loopdetect trap none
+config loopdetect ports 1-28 state disabled
+config loopdetect ports <CLIENTS_PORTS> state enabled
+
+# QOS
+
+config scheduling_mechanism strict
+config scheduling 3 strict
+config scheduling 0 weight 1 
+config scheduling 1 weight 2 
+config scheduling 2 weight 4 
+config scheduling 3 weight 8 
+config 802.1p user_priority 0 0
+config 802.1p user_priority 1 0
+config 802.1p user_priority 2 1
+config 802.1p user_priority 3 1
+config 802.1p user_priority 4 2
+config 802.1p user_priority 5 3
+config 802.1p user_priority 6 3
+config 802.1p user_priority 7 3
+config cos tos value 0 class 0
+config cos tos value 1 class 0
+config cos tos value 2 class 0
+config cos tos value 3 class 0
+config cos tos value 4 class 0
+config cos tos value 5 class 0
+config cos tos value 6 class 0
+config cos tos value 7 class 0
+config dscp_mapping dscp_value 0 class 0
+config dscp_mapping dscp_value 1 class 0
+config dscp_mapping dscp_value 2 class 0
+config dscp_mapping dscp_value 3 class 0
+config dscp_mapping dscp_value 4 class 0
+config dscp_mapping dscp_value 5 class 0
+config dscp_mapping dscp_value 6 class 0
+config dscp_mapping dscp_value 7 class 0
+config dscp_mapping dscp_value 8 class 0
+config dscp_mapping dscp_value 9 class 0
+config dscp_mapping dscp_value 10 class 0
+config dscp_mapping dscp_value 11 class 0
+config dscp_mapping dscp_value 12 class 0
+config dscp_mapping dscp_value 13 class 0
+config dscp_mapping dscp_value 14 class 0
+config dscp_mapping dscp_value 15 class 0
+config dscp_mapping dscp_value 16 class 0
+config dscp_mapping dscp_value 17 class 0
+config dscp_mapping dscp_value 18 class 0
+config dscp_mapping dscp_value 19 class 0
+config dscp_mapping dscp_value 20 class 0
+config dscp_mapping dscp_value 21 class 0
+config dscp_mapping dscp_value 22 class 0
+config dscp_mapping dscp_value 23 class 0
+config dscp_mapping dscp_value 24 class 0
+config dscp_mapping dscp_value 25 class 0
+config dscp_mapping dscp_value 26 class 0
+config dscp_mapping dscp_value 27 class 0
+config dscp_mapping dscp_value 28 class 0
+config dscp_mapping dscp_value 29 class 0
+config dscp_mapping dscp_value 30 class 0
+config dscp_mapping dscp_value 31 class 0
+config dscp_mapping dscp_value 32 class 0
+config dscp_mapping dscp_value 33 class 0
+config dscp_mapping dscp_value 34 class 0
+config dscp_mapping dscp_value 35 class 0
+config dscp_mapping dscp_value 36 class 0
+config dscp_mapping dscp_value 37 class 0
+config dscp_mapping dscp_value 38 class 0
+config dscp_mapping dscp_value 39 class 0
+config dscp_mapping dscp_value 40 class 0
+config dscp_mapping dscp_value 41 class 0
+config dscp_mapping dscp_value 42 class 0
+config dscp_mapping dscp_value 43 class 0
+config dscp_mapping dscp_value 44 class 0
+config dscp_mapping dscp_value 45 class 0
+config dscp_mapping dscp_value 46 class 0
+config dscp_mapping dscp_value 47 class 0
+config dscp_mapping dscp_value 48 class 0
+config dscp_mapping dscp_value 49 class 0
+config dscp_mapping dscp_value 50 class 0
+config dscp_mapping dscp_value 51 class 0
+config dscp_mapping dscp_value 52 class 0
+config dscp_mapping dscp_value 53 class 0
+config dscp_mapping dscp_value 54 class 0
+config dscp_mapping dscp_value 55 class 0
+config dscp_mapping dscp_value 56 class 0
+config dscp_mapping dscp_value 57 class 0
+config dscp_mapping dscp_value 58 class 0
+config dscp_mapping dscp_value 59 class 0
+config dscp_mapping dscp_value 60 class 0
+config dscp_mapping dscp_value 61 class 0
+config dscp_mapping dscp_value 62 class 0
+config dscp_mapping dscp_value 63 class 0
+config 802.1p default_priority 1-28 0
+config cos mapping port 1-28 ethernet 802.1p  
+
+# MIRROR
+
+disable mirror
+config mirror port 1 delete source ports 1 both
+
+# BANDWIDTH
+
+config bandwidth_control 1-28 rx_rate no_limit tx_rate no_limit
+
+# SYSLOG
+
+enable syslog
+create syslog host 1 ipaddress <EQM_IP> severity all facility local0 udp_port 514  state enable 
+create syslog host 2 ipaddress <ADMIN_PROXY_IP> severity all facility local0 udp_port 514  state enable 
+config log_save_timing on_demand
+
+# TRAF-SEGMENTATION
+
+<CONF_TRAF_SEGMENTATION>
+
+# PORT
+
+enable jumbo_frame
+config ports 1-24 speed auto flow_control disable state enable
+config ports 1-26 learning enable
+config ports 1-26 mdix auto
+config ports 25-26 medium_type fiber speed auto flow_control disable state enable clear_description
+config ports 25-28 medium_type fiber learning enable
+config ports 25-26 speed auto flow_control disable state enable
+config ports 27-28 medium_type fiber speed auto flow_control disable state enable
+<PORTS_DESCRIPTION>
+
+
+# OAM
+
+
+# MANAGEMENT
+
+create trusted_host <GW>
+create trusted_host <ADMIN_PROXY_IP>
+create trusted_host <EQM_IP>
+create trusted_host network 10.2.1.0/24
+create trusted_host network 212.33.233.40/29
+create trusted_host 212.33.232.102
+enable snmp traps 
+enable snmp authenticate_traps 
+enable snmp linkchange_traps
+config snmp linkchange_traps ports all enable
+config snmp coldstart_traps enable
+config snmp warmstart_traps enable
+config snmp system_name <THREAD_NUM>
+config snmp system_location <ADDRESS>
+config snmp system_contact <SNMP_CONTACT>
+disable rmon 
+
+# SNMPv3
+
+delete snmp community public
+delete snmp community private
+delete snmp user initial
+delete snmp group initial
+delete snmp view restricted all
+delete snmp view CommunityView all
+delete snmp group public
+delete snmp group private
+delete snmp group ReadGroup
+delete snmp group WriteGroup
+config snmp engineID 02250000000000628311
+create snmp view restricted 1.3.6.1.2.1.1 view_type included
+create snmp view restricted 1.3.6.1.2.1.11 view_type included
+create snmp view restricted 1.3.6.1.6.3.10.2.1 view_type included
+create snmp view restricted 1.3.6.1.6.3.11.2.1 view_type included
+create snmp view restricted 1.3.6.1.6.3.15.1.1 view_type included
+create snmp view CommunityView 1 view_type included
+create snmp view CommunityView 1.3.6.1.6.3 view_type excluded
+create snmp view CommunityView 1.3.6.1.6.3.1 view_type included
+create snmp group initial v3  noauth_nopriv read_view restricted notify_view restricted 
+create snmp group <SNMP_RW_COMMUNITY> v1 read_view CommunityView write_view CommunityView notify_view CommunityView 
+create snmp group <SNMP_RW_COMMUNITY> v2c read_view CommunityView write_view CommunityView notify_view CommunityView 
+create snmp group ReadGroup v1 read_view CommunityView notify_view CommunityView 
+create snmp group ReadGroup v2c read_view CommunityView notify_view CommunityView 
+create snmp group WriteGroup v1 read_view CommunityView write_view CommunityView notify_view CommunityView 
+create snmp group WriteGroup v2c read_view CommunityView write_view CommunityView notify_view CommunityView 
+create snmp community <SNMP_RW_COMMUNITY> view CommunityView read_write
+create snmp user initial initial 
+create snmp host <ADMIN_PROXY_IP> v2c  <SNMP_RW_COMMUNITY> 
+create snmp host <EQM_IP> v2c  <SNMP_RW_COMMUNITY> 
+
+# FIRM
+
+config tftpc server_udp_port 69  client_udp_port 50001
+config configuration trap save disable upload disable download disable 
+
+# VLAN
+
+disable asymmetric_vlan
+enable pvid auto_assign
+config vlan default delete 1-28
+config vlan default advertisement enable
+config vlan default add untagged <BACKBON_PORTS>
+<CONF_VLAN>
+
+disable qinq
+disable gvrp
+config qinq ports 1-28 role nni outer_tpid 0x88A8 trust_cvid disable vlan_translation disable
+<GVRP_PVID>
+
+
+# 8021X
+
+disable 802.1x
+config 802.1x auth_protocol radius_eap
+config radius parameter timeout 5 retransmit 2
+config 802.1x capability ports 1-28 none
+config 802.1x auth_parameter ports 1-28 direction both port_control auto quiet_period 60 tx_period 30 supp_timeout 30 server_timeout 30 max_req 2 reauth_period 3600 enable_reauth disable
+
+# PORT_LOCK
+
+disable port_security trap_log
+config port_security ports 1-28 admin_state disable max_learning_addr 1 lock_address_mode DeleteOnTimeout
+
+# PPPOE
+
+config pppoe circuit_id_insertion state disable
+config pppoe circuit_id_insertion ports 1-28 state enable circuit_id ip
+
+# MAC_ADDRESS_TABLE_NOTIFICATION
+
+config mac_notification interval 1 historysize 1
+enable mac_notification
+config mac_notification ports <NOT_BACKBON_PORTS> enable
+config mac_notification ports <BACKBON_PORTS> disable
+
+# LACP
+
+config lacp_ports 1-28 mode passive
+config link_aggregation algorithm mac_source
+
+# STP
+
+config stp version rstp
+config stp maxage 20 maxhops 20 forwarddelay 15 txholdcount 6 fbpdu enable hellotime 2
+config stp priority <STP_PRIORITY> instance_id 0 
+config stp mst_config_id name ppk-628-3 revision_level 0
+config stp ports <NOT_BACKBON_PORTS> externalCost auto edge true p2p auto state enable
+config stp mst_ports 1-28 instance_id 0 internalCost auto priority 128
+config stp ports <NOT_BACKBON_PORTS> fbpdu disable
+config stp ports <NOT_BACKBON_PORTS> restricted_role true
+config stp ports <NOT_BACKBON_PORTS> restricted_tcn true
+config stp ports <BACKBON_PORTS> externalCost auto edge false p2p auto state enable
+config stp ports <BACKBON_PORTS> fbpdu enable
+config stp ports <BACKBON_PORTS> restricted_role false
+config stp ports <BACKBON_PORTS> restricted_tcn false
+config stp trap new_root enable topo_change enable 
+enable stp
+
+# MULTI FILTER
+
+create mcast_filter_profile profile_id 1 profile_name service
+create mcast_filter_profile profile_id 2 profile_name streaming
+config mcast_filter_profile profile_id 1 add 224.0.0.2
+config mcast_filter_profile profile_id 2 add 225.0.0.1-225.0.5.254
+config mcast_filter_profile profile_id 2 add 225.0.55.0-225.0.59.255
+config max_mcast_group ports <PPPOE_PORTS> max_group 15
+config max_mcast_group ports <BACKBON_PORTS> max_group 256
+config limited_multicast_addr ports <PPPOE_PORTS> add profile_id 1
+config limited_multicast_addr ports <PPPOE_PORTS> add profile_id 2
+config max_mcast_group ports 1-28 ipv6 max_group 1
+
+# BPDU_TUNNEL
+
+config bpdu_tunnel ports all type none
+disable bpdu_tunnel
+
+# BPDU_PROTECTION
+
+config bpdu_protection ports 1-28 mode shutdown
+
+# SAFEGUARD_ENGINE
+
+config safeguard_engine state disable utilization rising 30 falling 20 trap_log disable mode fuzzy
+
+# BANNER_PROMP
+
+config command_prompt default
+config greeting_message default
+
+# SSH
+
+config ssh algorithm 3DES enable
+config ssh algorithm AES128 enable
+config ssh algorithm AES192 enable
+config ssh algorithm AES256 enable
+config ssh algorithm arcfour enable
+config ssh algorithm blowfish enable
+config ssh algorithm cast128 enable
+config ssh algorithm twofish128 enable
+config ssh algorithm twofish192 enable
+config ssh algorithm twofish256 enable
+config ssh algorithm MD5 enable
+config ssh algorithm SHA1 enable
+config ssh algorithm RSA enable
+config ssh algorithm DSA enable
+config ssh authmode password enable
+config ssh authmode publickey enable
+config ssh authmode hostbased enable
+config ssh server maxsession 8
+config ssh server contimeout 120
+config ssh server authfail 2
+config ssh server rekey never
+config ssh user dlink authmode password
+enable ssh
+
+# SNOOP
+
+enable igmp_snooping
+config igmp_snooping data_driven_learning max_learned_entry 56
+enable igmp_snooping multicast_vlan
+create igmp_snooping multicast_vlan iptv 4024
+config igmp_snooping multicast_vlan iptv state enable 
+config igmp_snooping multicast_vlan iptv replace_source_ip 192.168.10.1
+config igmp_snooping multicast_vlan iptv add member_port <PPPOE_PORTS> 
+config igmp_snooping multicast_vlan iptv add source_port <BACKBON_PORTS>
+config igmp_snooping vlan_name default state disable fast_leave disable 
+config igmp_snooping data_driven_learning vlan_name default aged_out disable 
+config igmp_snooping querier all query_interval 125 max_response_time 10 robustness_variable 2 last_member_query_interval 1 state disable version 3 
+config igmp_snooping vlan_name iptv fast_leave disable
+config igmp_snooping data_driven_learning vlan_name iptv aged_out enable 
+config igmp_snooping querier vlan_name iptv query_interval 125 max_response_time 10 robustness_variable 2 last_member_query_interval 1 state disable version 2
+config router_ports_forbidden iptv add <PPPOE_PORTS>
+config igmp access_authentication ports 1-28 state disable
+config cpu_filter l3_control_pkt 1-28 all state disable
+
+# MLDSNP
+
+
+# FDB
+
+config fdb aging_time 300
+config multicast port_filtering_mode all filter_unregistered_groups
+config multicast port_filtering_mode 25-28 forward_unregistered_groups
+disable flood_fdb
+config flood_fdb log enable trap enable
+
+# VLAN_TRUNK
+
+disable vlan_trunk
+
+# SMTP
+
+disable smtp
+
+# ACL
+
+create access_profile  ethernet  destination_mac FF-FF-FF-FF-FF-FF  profile_id 5
+config access_profile profile_id 5  add access_id 3  ethernet  destination_mac 01-00-0C-CC-CC-CD  port 1-28 deny
+config access_profile profile_id 5  add access_id 4  ethernet  destination_mac 01-00-0C-CC-CC-CC  port 1-28 deny
+create access_profile  ethernet  source_mac FF-FF-FF-00-00-00 ethernet_type  profile_id 10
+config access_profile profile_id 10  add access_id 1  ethernet  source_mac 00-90-8F-00-00-00 ethernet_type 0x8864    port 1-28 permit priority 5
+config access_profile profile_id 10  add access_id 2  ethernet  source_mac 00-0E-08-00-00-00 ethernet_type 0x8864    port 1-28 permit priority 5
+config access_profile profile_id 10  add access_id 3  ethernet  source_mac 00-02-A4-00-00-00 ethernet_type 0x8864    port 1-28 permit priority 5
+config access_profile profile_id 10  add access_id 4  ethernet  source_mac C4-0A-CB-00-00-00 ethernet_type 0x8864    port 1-28 permit priority 5
+config access_profile profile_id 10  add access_id 5  ethernet  source_mac C4-64-13-00-00-00 ethernet_type 0x8864    port 1-28 permit priority 5
+config access_profile profile_id 10  add access_id 6  ethernet  source_mac 30-E4-DB-00-00-00 ethernet_type 0x8864    port 1-28 permit priority 5
+config access_profile profile_id 10  add access_id 7  ethernet  source_mac 88-75-56-00-00-00 ethernet_type 0x8864    port 1-28 permit priority 5
+config access_profile profile_id 10  add access_id 8  ethernet  source_mac 64-9E-F3-00-00-00 ethernet_type 0x8864    port 1-28 permit priority 5
+config access_profile profile_id 10  add access_id 9  ethernet  source_mac 54-78-1A-00-00-00 ethernet_type 0x8864    port 1-28 permit priority 5
+create access_profile  ip  udp dst_port_mask 0xFFFF    profile_id 15
+config access_profile profile_id 15  add access_id 1  ip  udp dst_port 67  port 1-28 permit
+create access_profile  ip  source_ip 255.255.255.0  profile_id 16
+config access_profile profile_id 16  add access_id 1  ip  source_ip 10.71.255.0  port 1-28 permit
+create access_profile  ethernet  ethernet_type  profile_id 20
+config access_profile profile_id 20  add access_id 1  ethernet  ethernet_type 0x8863    port 1-28 permit
+config access_profile profile_id 20  add access_id 2  ethernet  ethernet_type 0x8864    port 1-28 permit
+config access_profile profile_id 20  add access_id 3  ethernet  ethernet_type 0x9000    port 1-28 permit
+config access_profile profile_id 20  add access_id 4  ethernet  ethernet_type 0x0806    port 1-28 permit
+config access_profile profile_id 20  add access_id 5  ethernet  ethernet_type 0x888E    port 1-28 deny
+create access_profile  ethernet  destination_mac FF-FF-FF-FF-FF-FF  profile_id 35
+config access_profile profile_id 35  add access_id 1  ethernet  destination_mac 01-80-C2-00-00-00  port 1-28 permit
+create access_profile  ethernet  source_mac 00-00-00-00-00-00  profile_id 40
+config access_profile profile_id 40  add access_id 1  ethernet  source_mac 00-00-00-00-00-00  port <IP_PORTS> permit
+config access_profile profile_id 40  add access_id 2  ethernet  source_mac 00-00-00-00-00-00  port 1-28 deny
+disable cpu_interface_filtering
+
+# SNTP
+
+enable sntp
+config time_zone operator + hour <TIME_ZONE> min 0
+config sntp primary <NS4_IP> secondary <NS2_IP> poll-interval 720
+config dst disable
+
+# DOS_PREVENTION
+
+disable dos_prevention trap_log 
+config dos_prevention dos_type land_attack action drop state disable 
+config dos_prevention dos_type blat_attack action drop state disable 
+config dos_prevention dos_type smurf_attack action drop state disable 
+config dos_prevention dos_type tcp_null_scan action drop state disable 
+config dos_prevention dos_type tcp_xmascan action drop state disable 
+config dos_prevention dos_type tcp_synfin action drop state disable 
+config dos_prevention dos_type tcp_syn_srcport_less_1024 action drop state disable 
+
+# DHCP_SERVER_SCREENING
+
+config filter dhcp_server ports 1-28 state disable
+config filter dhcp_server illegal_server_log_suppress_duration 5min
+config filter dhcp_server trap disable
+config filter dhcp_server log disable
+
+# ADDRBIND
+
+config address_binding ip_mac ports 1-28 state disable allow_zeroip disable forward_dhcppkt enable
+config address_binding ip_mac ports 1-28 mode arp stop_learning_threshold 500
+config address_binding dhcp_snoop max_entry ports 1-28 limit 5
+config address_binding dhcp_snoop max_entry ports 1-28 limit no_limit ipv6
+disable address_binding dhcp_snoop
+disable address_binding trap_log
+disable address_binding dhcp_snoop ipv6
+
+# ARPSPOOF
+
+
+# IP
+
+config ipif System vlan <MGMT_VLAN> ipaddress <MGMT_IP>/<MGMT_SHORT_MASK> state enable
+config ipif System dhcp_option12 state disable
+enable telnet 23
+disable web
+disable autoconfig
+config autoconfig timeout 50
+
+# LLDP
+
+enable lldp
+config lldp message_tx_interval 30
+config lldp tx_delay 2
+config lldp message_tx_hold_multiplier 4
+config lldp reinit_delay 2
+config lldp notification_interval 5
+config lldp ports 1-28 mgt_addr ipv4 <MGMT_IP> enable
+config lldp ports 1-28 notification disable
+config lldp ports <NOT_BACKBON_PORTS> admin_status rx_only
+config lldp ports <BACKBON_PORTS> admin_status tx_and_rx
+config lldp ports <BACKBON_PORTS> basic_tlvs port_description system_name system_description system_capabilities enable
+config lldp ports <BACKBON_PORTS> dot1_tlv_pvid enable 
+config lldp ports <BACKBON_PORTS> dot3_tlvs mac_phy_configuration_status link_aggregation  maximum_frame_size enable
+
+# ARP
+
+config arp_aging time 2
+config gratuitous_arp send ipif_status_up enable
+config gratuitous_arp send dup_ip_detected enable
+config gratuitous_arp learning enable
+disable gratuitous_arp ipif System trap
+enable gratuitous_arp ipif System log
+config gratuitous_arp send periodically ipif System interval 300
+
+# AAA
+
+create authen server_host <RADIUS1_IP> protocol radius port <radius_port> key "<radius_key>" timeout 5 retransmit 2
+config authen server_group radius delete server_host <RADIUS1_IP> protocol radius
+create authen server_host <RADIUS2_IP> protocol radius port <radius_port> key "<radius_key>" timeout 5 retransmit 2
+config authen server_group radius delete server_host <RADIUS2_IP> protocol radius
+config authen server_group radius add server_host <RADIUS1_IP> protocol radius
+config authen server_group radius add server_host <RADIUS2_IP> protocol radius
+config authen_login default method local
+create authen_login method_list_name RAD_LOCAL
+config authen_login method_list_name RAD_LOCAL method radius local
+config authen_enable default method local_enable
+create authen_enable method_list_name RAD_LOCAL
+config authen_enable method_list_name RAD_LOCAL method none
+config authen application console login default
+config authen application console enable default
+config authen application telnet login method_list_name RAD_LOCAL
+config authen application telnet enable method_list_name RAD_LOCAL
+config authen application ssh login method_list_name RAD_LOCAL
+config authen application ssh enable method_list_name RAD_LOCAL
+config authen application http login default
+config authen application http enable default
+config authen parameter response_timeout 30
+config authen parameter attempt 3
+enable authen_policy
+config admin local_enable
+
+*@&2jmj7l5rSw0yVb/vlWAYkK/YBwmwMs6D
+*@&2jmj7l5rSw0yVb/vlWAYkK/YBwmwMs6D
+
+# DHCP_RELAY
+
+disable dhcp_relay
+config dhcp_relay hops 4 time 0 
+config dhcp_relay option_82 state disable
+config dhcp_relay option_82 check disable
+config dhcp_relay option_82 policy replace
+config dhcp_relay option_82 remote_id default
+
+# DHCP_LOCAL_RELAY
+
+disable dhcp_local_relay
+config dhcp_local_relay option_82 remote_id default
+config dhcp_local_relay option_82 ports 1-28 policy keep
+
+# NDP
+
+
+# ROUTE
+
+create iproute default <GW> 1
+
+# RELAY6
+
+config dhcpv6_relay hop_count  4 
+disable dhcpv6_relay 
+
+#-------------------------------------------------------------------
+#             End of configuration file for DES-1228/ME
+#-------------------------------------------------------------------

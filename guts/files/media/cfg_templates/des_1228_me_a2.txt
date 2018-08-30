@@ -608,7 +608,7 @@ config igmp_snooping vlan_name iptv host_timeout 260 router_timeout 260 leave_ti
 
 config igmp_snooping data_driven_learning vlan_name iptv aged_out enable 
 
-config router_ports_forbidden iptv add 1-24
+config router_ports_forbidden iptv add <PPPOE_PORTS>
 
 config igmp access_authentication port 1-28 state disable
 

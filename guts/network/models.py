@@ -538,7 +538,7 @@ class ACCESS_SWITCH(models.Model):
                             num_in_switch = port_num,
                         )
                     # Если порт старый был/стал аплинком или портом расширения, то меняем настройки в соответствии с новой моделью
-                    elif ports.get(num_in_switch=port_num).port_type.id in (0, 1) or PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]).id in (0, 1):
+                    elif ports.get(num_in_switch=port_num).port_type.connection_type in (0, 1) or PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]).connection_type in (0, 1):
                         # Меняем настройки порта port_num
                         #print ('Меняем настройки порта', port_num, PORT_TYPE.objects.get(id=self.sw_model.ports_types.split(',')[port_num-1]))
                         edit_port = ports.get(num_in_switch=port_num)
@@ -755,7 +755,7 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
             #вычисляем для порта untag-влан, если это требуеся
             self.default_u_vlan()
             # только для аплинков и распределительных портов 
-            if self.port_type.id in (0, 1):
+            if self.port_type.connection_type in (0, 1):
                 # то меняем значение u_vlan на 1, а t_vlans на список вланов в нитке, к которой относится коммутатор + permanent_vlans
                 self.description = self.port_type.default_description
                 self.default_u_vlan()
@@ -763,9 +763,9 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
                 vlans_in_thread = self.access_switch.access_node.thread.used_vlans()
                 vlans = vlans_in_thread.keys()
                 t_vlans=list(vlans)
-                #print(t_vlans)
                 t_vlans += net_lib.interval_to_arr(GUTS_CONSTANTS['PERMANENT_VLANS'])
-                #print(self, t_vlans)
+                # Добавляем влан управления
+                t_vlans.append(int(GUTS_CONSTANTS['MGMT_VLAN']))
                 self.t_vlans = net_lib.arr_to_interval(t_vlans)
             super(PORT_OF_ACCESS_SWITCH, self).save(*args, **kwargs)
         
@@ -811,7 +811,7 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
                         self.u_vlan = 0
                         self.t_vlans = ''
                 # Если новое значение соответствует порту какого-либо сигнализатора, или неисправного порта
-                elif self.port_type.id in (5,99):
+                elif self.port_type.connection_type in (5, 99):
                     # Если не изменили описание порта, то выставляем значение поумолчению
                     if self.description == current_port.description:
                         self.description = self.port_type.default_description
@@ -863,7 +863,7 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
 
     # процедура специально для обновления аплинков и распред портов
     def save_uplink(self):
-        if self.port_type.id in (0, 1):
+        if self.port_type.connection_type in (0, 1):
             print(self)
             # то меняем значение u_vlan на 1, а t_vlans на список вланов в нитке, к которой относится коммутатора
             self.description = self.port_type.default_description
@@ -881,7 +881,7 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
         
         
     def default_u_vlan(self):
-        type_id = self.port_type.id
+        type_id = self.port_type.connection_type
         #Если порт для пппое то вычисляем для него уникальный pppoe-влан
         if type_id == 3:
             current_count_access_switches_in_thread = ACCESS_SWITCH.objects.filter(
@@ -889,7 +889,10 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
                     thread = self.access_switch.access_node.thread
                 )
             ).count()
-            pppoe_vlan = 50 * (19 + current_count_access_switches_in_thread) + self.num_in_switch
+            if self.num_in_switch > 24:
+                pppoe_vlan = 50 * (19 + current_count_access_switches_in_thread) + self.num_in_switch % 24
+            else:
+                pppoe_vlan = 50 * (19 + current_count_access_switches_in_thread) + self.num_in_switch
             self.u_vlan = pppoe_vlan
         # для портов расширения и аплинков необходимо добавить default vlan
         if type_id in (0, 1):
