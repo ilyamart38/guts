@@ -1439,7 +1439,7 @@ def zte_cfg(access_switch):
         PORTS_DESCRIPTION = ''
         for port in access_switch.port_of_access_switch_set.all():
             description = net_lib.translit(port.description)
-            PORTS_DESCRIPTION += '  set port %s description %s"\n' % (port.num_in_switch, description)
+            PORTS_DESCRIPTION += '  set port %s description %s\n' % (port.num_in_switch, description)
         template = re.sub('<PORTS_DESCRIPTION>', PORTS_DESCRIPTION, template)
         
         
