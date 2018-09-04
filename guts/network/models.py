@@ -429,14 +429,16 @@ class SW_MODEL(models.Model):
     eqm_type = models.CharField(max_length = 100, default = '', verbose_name = 'Тип объекта в eqm')
     fw_version = models.CharField(max_length = 100, blank = True, verbose_name = 'Рекомендованная версия ПО')
     #fw_file = models.CharField(max_length = 100, blank = True, verbose_name = 'Файл прошивки')
-    fw_file = models.FileField(upload_to = 'fw', verbose_name = 'Файл прошивки')
+    bootrom_file = models.FileField(upload_to = 'fw', verbose_name = 'Файл прошивки bootrom', blank=True)
+    transit_fw =  models.FileField(upload_to = 'fw', verbose_name = 'Файл промежуточной прошивки', blank=True)
+    fw_file = models.FileField(upload_to = 'fw', verbose_name = 'Файл прошивки', blank=True)
     fw_update_commands = models.TextField(blank = True, verbose_name = 'Описание процесса обновления прошивки')
     hw_version = models.CharField(max_length = 100, blank = True, verbose_name = 'HW версия')
     ports_count = models.IntegerField(default = 0, verbose_name = 'Количество портов')
     ports_names = models.CharField(max_length = 500, blank = True, verbose_name = 'Названия портов в конфиге')
     ports_types = models.CharField(max_length = 200, blank = True, verbose_name = 'Типы портов по умолчанию', help_text = create_help_text_for_type_ports())
     #cfg_template = models.CharField(max_length = 100, blank = True)
-    cfg_template = models.FileField(upload_to = 'cfg_templates', verbose_name = 'Шаблон конфигурации')
+    cfg_template = models.FileField(upload_to = 'cfg_templates', verbose_name = 'Шаблон конфигурации', blank=True)
     
     cfg_download_commands = models.TextField(blank = True, verbose_name = 'Описание процесса загрузки конфигурации')
     # Представление модели коммутатора
@@ -467,6 +469,10 @@ class SW_MODEL(models.Model):
             fw_version = "<b>%s</b>" % self.fw_version
             update_text = re.sub("<FW>", fw_version, update_text)
             update_text = re.sub("<FW_FILE>", "<a href='%s'>%s</a>" % (self.fw_file.url, self.fw_file.name), update_text)
+            if self.bootrom_file:
+                update_text = re.sub("<BOOTROM_FILE>", "<a href='%s'>%s</a>" % (self.bootrom_file.url, self.bootrom_file.name), update_text)
+            else:
+                update_text = re.sub("<BOOTROM_FILE>", "---", update_text)
         else:
             update_text = 'Для данной модели коммутатора нет описания процесса обновления прошивки!'
         return update_text
@@ -613,6 +619,9 @@ class ACCESS_SWITCH(models.Model):
         if self.sw_model.vendor.title == 'D-Link':
             dlink_cfg(self)
             return
+        elif self.sw_model.vendor.title == 'ZTE':
+            zte_cfg(self)
+            
         print('>>>>>',self.sw_model.vendor.title)
         
 
@@ -1121,6 +1130,323 @@ def dlink_cfg(access_switch):
         template = re.sub('<SNMP_RW_COMMUNITY>', SNMP_RW_COMMUNITY, template)
         
         template = re.sub('<TEST>', '', template)
+        try:
+            cfg_file.write(template)
+            access_switch.cfg_file.save(dst_file,File(cfg_file),save=False)
+            # Закрываем и удаляем временный файл
+            cfg_file.close()
+        except IOError as err_str:
+            print('ERROR!!! Неудалось записать файл для записи конфига!!!')
+            print('< ' + str(err_str) + ' >')
+            return
+        os.remove(tmp_cfg_file_path)
+        access_switch.save()
+    
+
+def zte_cfg(access_switch):
+    # определяем шаблон конфигурации по модели коммутатора
+    template_file = access_switch.sw_model.cfg_template
+    dst_file = '%s_%s.cfg' % (access_switch.pk, timezone.now().strftime('%Y%m%d_%H%M'))
+    # Если определен шаблон конфига пытаемся его открыть
+    if template_file != '':
+        # Пытаемся открыть файл шаблона конфигурации
+        try:
+            template = open(template_file.path).read()
+        except IOError as err_str:
+            print('ERROR!!! Неудалось прочитать файл шаблона!!!')
+            print('< ' + str(err_str) + ' >')
+            return
+        # Пытаемся создать файл конфигурации для данного коммутатора
+        try:
+            tmp_cfg_file_path = '/tmp/guts_cfg.tmp'
+            cfg_file = open(tmp_cfg_file_path,"w").close()
+            cfg_file = open(tmp_cfg_file_path,"r+")
+        except IOError as err_str:
+            print('ERROR!!! Неудалось создать файл для записи конфига!!!')
+            print('< ' + str(err_str) + ' >')
+            return
+        ##############################################################################################
+        #<THREAD_NUM>           номер нитки (111-1)
+        THREAD_NUM = '%s-%s.%s.%s-%s' % (
+                    access_switch.access_node.thread.campus.prefix,
+                    access_switch.access_node.thread.campus.ms.mgs.mgs_num,
+                    access_switch.access_node.thread.campus.ms.num_in_mgs,
+                    access_switch.access_node.thread.campus.num_in_ms,
+                    access_switch.access_node.thread.num_in_campus)
+        template = re.sub('<THREAD_NUM>', THREAD_NUM, template)
+        
+        ##############################################################################################
+        #<ADDRESS>              адрес_латиницей
+        ADDRESS = net_lib.translit(access_switch.access_node.address)
+        template = re.sub('<ADDRESS>', ADDRESS, template)
+        
+        ##############################################################################################
+        #<SNMP_CONTACT>         
+        SNMP_CONTACT = GUTS_CONSTANTS['SNMP_CONTACT']
+        template = re.sub('<SNMP_CONTACT>', SNMP_CONTACT, template)
+        
+        ##############################################################################################
+        #<CLIENTS_PORTS>        порты с клиентскими подключениями (все кроме бэкбонов, и сигнальных)
+        clients_ports_list = list(access_switch.clients_ports().values_list('num_in_switch', flat = True))
+        CLIENTS_PORTS = net_lib.arr_to_interval(clients_ports_list)
+        template = re.sub('<CLIENTS_PORTS>', CLIENTS_PORTS, template)
+        
+        ##############################################################################################
+        #<PPPOE_PORTS>          порты pppoe-клиентов
+        pppoe_ports_list = list(access_switch.pppoe_ports().values_list('num_in_switch', flat = True))
+        PPPOE_PORTS = net_lib.arr_to_interval(pppoe_ports_list)
+        template = re.sub('<PPPOE_PORTS>', PPPOE_PORTS, template)
+        
+        ##############################################################################################
+        # <PORTS_MCAST_FILTER>
+        # set port 1 multicast-filter enable
+        # set port 2 multicast-filter enable
+        PORTS_MCAST_FILTER = ''
+        for port in pppoe_ports_list:
+            PORTS_MCAST_FILTER += '  set port %s multicast-filter enable\n' % port
+        template = re.sub('<PORTS_MCAST_FILTER>', PORTS_MCAST_FILTER, template)
+        
+        ##############################################################################################
+        #<NOT_BACKBON_PORTS>    порты кроме аплинков и портов расширения
+        not_backbon_ports_list = list(access_switch.not_backbon_ports().values_list('num_in_switch', flat = True))
+        NOT_BACKBON_PORTS = net_lib.arr_to_interval(not_backbon_ports_list)
+        template = re.sub('<NOT_BACKBON_PORTS>', NOT_BACKBON_PORTS, template)
+        
+        ##############################################################################################
+        #<BACKBON_PORTS>        порты аплинки+порты расширения
+        backbon_ports_list = list(access_switch.backbon_ports().values_list('num_in_switch', flat = True))
+        BACKBON_PORTS = net_lib.arr_to_interval(backbon_ports_list)
+        template = re.sub('<BACKBON_PORTS>', BACKBON_PORTS, template)
+        
+        ##############################################################################################
+        # <PORTS_PVID>
+        # set port 1 pvid 1451
+        # set port 2 pvid 1452
+        IGMP_SNOOPING_PORTS = ''
+        CREATE_VLAN = ''
+        PORTS_PVID = ''
+        used_vlans = list(access_switch.used_vlans().keys())
+        if 1 in used_vlans:
+            used_vlans.remove(1)
+        if 0 in used_vlans:
+            used_vlans.remove(0)
+        for vlan in sorted(used_vlans):
+            CREATE_VLAN += '  create vlan %s name _%s\n' % (vlan, vlan)
+        # <VLAN_ENABLE>
+        # <IGMP_SNOOPING_VLANS>
+        # set igmp snooping add vlan 1451-1474
+        VLAN_ENABLE = ''
+        
+        UNTAG_VLANS = ''
+        TAG_VLANS = ''
+        used_pppoe_vlans = []
+        for port in access_switch.port_of_access_switch_set.all():
+            if port.u_vlan not in [0,1]:
+                if port.num_in_switch in pppoe_ports_list:
+                    UNTAG_VLANS += '  set vlan %s,4024 add port %s untag\n' % (port.u_vlan, port.num_in_switch)
+                    IGMP_SNOOPING_PORTS += '  set igmp snooping add maxnum 15 port %s replace\n' % port.num_in_switch
+                    used_pppoe_vlans.append(port.u_vlan)
+                else:
+                    UNTAG_VLANS += '  set vlan %s add port %s untag\n' % (port.u_vlan, port.num_in_switch)
+            if port.num_in_switch in backbon_ports_list:
+                IGMP_SNOOPING_PORTS += '  set igmp snooping add maxnum 256 port %s replace\n' % port.num_in_switch
+                PORTS_PVID += '  set port %s pvid %s\n' % (port.num_in_switch, port.u_vlan)
+            if port.t_vlans != '':
+                for interval_t_vlans in port.t_vlans.split(','):
+                    TAG_VLANS += '  set vlan %s add port %s tag\n' % (interval_t_vlans, port.num_in_switch)
+        
+        IGMP_SNOOPING_VLANS = ''
+        used_pppoe_vlans_intervals = net_lib.arr_to_interval(used_pppoe_vlans)
+        for vlan_interval in used_pppoe_vlans_intervals.split(',') :
+            VLAN_ENABLE += '  set vlan %s enable\n' % vlan_interval
+            IGMP_SNOOPING_VLANS += '  set igmp snooping add vlan %s\n' % vlan_interval
+                
+        template = re.sub('<PORTS_PVID>', PORTS_PVID, template)
+        template = re.sub('<CREATE_VLAN>', CREATE_VLAN, template)
+        template = re.sub('<UNTAG_VLANS>', UNTAG_VLANS, template)
+        template = re.sub('<TAG_VLANS>', TAG_VLANS, template)
+        template = re.sub('<VLAN_ENABLE>', VLAN_ENABLE, template)
+        template = re.sub('<IGMP_SNOOPING_VLANS>', IGMP_SNOOPING_VLANS, template)
+        template = re.sub('<IGMP_SNOOPING_PORTS>', IGMP_SNOOPING_PORTS, template)
+        
+        ##############################################################################################
+        #<IP_PORTS>             порты на которых разрешен ip-трафик (не pppoe)
+        ip_ports_list = list(access_switch.ip_ports().values_list('num_in_switch', flat = True))
+        IP_PORTS = net_lib.arr_to_interval(ip_ports_list)
+        template = re.sub('<IP_PORTS>', IP_PORTS, template)
+        
+        
+        ##############################################################################################
+        #<CONF_TRAF_SEGMENTATION>   Настройки traffic segmentation
+        uplink_ports_list = list(access_switch.uplink_ports().values_list('num_in_switch', flat = True))
+        UPLINK_PORTS = net_lib.arr_to_interval(uplink_ports_list)
+        
+        downlink_ports_list = list(access_switch.downlink_ports().values_list('num_in_switch', flat = True))
+        DOWNLINK_PORTS = net_lib.arr_to_interval(downlink_ports_list)
+        
+        gag_ports_list = list(access_switch.gag_ports().values_list('num_in_switch', flat = True))
+        GAG_PORTS = net_lib.arr_to_interval(gag_ports_list)
+        
+        not_gag_ports_list = list(access_switch.not_gag_ports().values_list('num_in_switch', flat = True))
+        NOT_GAG_PORTS = net_lib.arr_to_interval(not_gag_ports_list)
+        
+        all_ports_list = list(access_switch.port_of_access_switch_set.values_list('num_in_switch', flat = True))
+        ALL_PORTS = net_lib.arr_to_interval(all_ports_list)
+        
+        CONF_TRAF_SEGMENTATION = "  set vlan pvlan session 1 promisc-port %s\n" % UPLINK_PORTS
+        CONF_TRAF_SEGMENTATION += "  set vlan pvlan session 1 isolate-port %s\n" % DOWNLINK_PORTS
+        
+        if GAG_PORTS != '':
+            CONF_TRAF_SEGMENTATION += "  set vlan pvlan session 2 isolate-port %s\n" % GAG_PORTS
+        
+        template = re.sub('<CONF_TRAF_SEGMENTATION>', CONF_TRAF_SEGMENTATION, template)
+        
+        ##############################################################################################
+        # <TRAFFIC_LIMIT>
+        # <STP_CONF>
+        # <LBD_CONF>
+        # <ACL_PORTS>
+        # set qos traffic-limit fe-port 1 data-rate 1
+        TRAFFIC_LIMIT = ''
+        STP_CONF = ''
+        LBD_CONF = ''
+        print(access_switch.sw_model.title)
+        fe_ports = []
+        if access_switch.sw_model.title in ['ZXR10 2928E', ]:
+            fe_ports = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
+        
+        ACL_PORTS = ''
+        for port in not_backbon_ports_list:
+            if port in fe_ports:
+                TRAFFIC_LIMIT += 'set qos traffic-limit fe-port %s data-rate 1\n' % port
+            else:
+                TRAFFIC_LIMIT += 'set qos traffic-limit ge-port %s data-rate 1\n' % port
+            
+            STP_CONF += ' set stp instance 0 port %s root-guard enable\n' % port
+            STP_CONF += ' set stp edge-port add port %s\n' % port
+            if port not in gag_ports_list:
+                LBD_CONF += '  set loopdetect port %s enable\n' % port
+            if port in pppoe_ports_list:
+                ACL_PORTS += '  set port %s acl 300 enable\n' % port
+            else:
+                ACL_PORTS += '  set port %s acl 210 enable\n' % port
+        for port in backbon_ports_list:
+            ACL_PORTS += '  set port %s acl 290 enable\n' % port
+
+            
+        template = re.sub('<TRAFFIC_LIMIT>', TRAFFIC_LIMIT, template)
+        template = re.sub('<STP_CONF>', STP_CONF, template)
+        template = re.sub('<LBD_CONF>', LBD_CONF, template)
+        template = re.sub('<ACL_PORTS>', ACL_PORTS, template)
+        
+            
+        
+        ##############################################################################################
+        #<MGMT_VLAN>              номер влана управления коммутатора
+        MGMT_VLAN = GUTS_CONSTANTS['MGMT_VLAN']
+        template = re.sub('<MGMT_VLAN>', MGMT_VLAN, template)
+        
+        ##############################################################################################
+        #<MGMT_IP>              ip-адрес коммутатора
+        MGMT_IP = access_switch.ip
+        template = re.sub('<MGMT_IP>', MGMT_IP, template)
+        
+        ##############################################################################################
+        #<MGMT_LONG_MASK>       маска подсети управления
+        if not access_switch.network:
+            access_switch.save()
+        MGMT_LONG_MASK = str(ipaddress.ip_network(access_switch.network).netmask)
+        template = re.sub('<MGMT_LONG_MASK>', MGMT_LONG_MASK, template)
+        
+        #<MGMT_SHORT_MASK>
+        MGMT_SHORT_MASK = str(ipaddress.ip_network(access_switch.network).prefixlen)
+        template = re.sub('<MGMT_SHORT_MASK>', MGMT_SHORT_MASK, template)
+        
+        ##############################################################################################
+        #<GW>                   ip-адрес шлюза поумолчанию
+        GW = access_switch.network.gw
+        template = re.sub('<GW>', GW, template)
+        
+        ##############################################################################################
+        #<ID>                   id коммутатора
+        ID = access_switch.pk
+        template = re.sub('<ID>', str(ID), template)
+        
+        ##############################################################################################
+        #<ADMIN_PROXY_IP>       
+        ADMIN_PROXY_IP = GUTS_CONSTANTS['ADMIN_PROXY_IP']
+        template = re.sub('<ADMIN_PROXY_IP>', ADMIN_PROXY_IP, template)
+        
+        ##############################################################################################
+        #<EQM_IP>
+        EQM_IP = GUTS_CONSTANTS['EQM_IP']
+        template = re.sub('<EQM_IP>', EQM_IP, template)
+        
+        ##############################################################################################
+        #<NS4_IP>
+        NS4_IP = GUTS_CONSTANTS['NS4_IP']
+        template = re.sub('<NS4_IP>', NS4_IP, template)
+        
+        ##############################################################################################
+        #<NS2_IP>
+        NS2_IP = GUTS_CONSTANTS['NS2_IP']
+        template = re.sub('<NS2_IP>', NS2_IP, template)
+        
+        ##############################################################################################
+        #<RADIUS1_IP>
+        RADIUS1_IP = GUTS_CONSTANTS['RADIUS1_IP']
+        template = re.sub('<RADIUS1_IP>', RADIUS1_IP, template)
+        
+        ##############################################################################################
+        #<RADIUS2_IP>
+        RADIUS2_IP = GUTS_CONSTANTS['RADIUS2_IP']
+        template = re.sub('<RADIUS2_IP>', RADIUS2_IP, template)
+        
+        ##############################################################################################
+        #<radius_port>
+        radius_port = GUTS_CONSTANTS['radius_port']
+        template = re.sub('<radius_port>', radius_port, template)
+        
+        ##############################################################################################
+        #<radius_key>
+        radius_key = GUTS_CONSTANTS['radius_key']
+        template = re.sub('<radius_key>', radius_key, template)
+        
+        ##############################################################################################
+        # <acct_port>
+        acct_port = GUTS_CONSTANTS['acct_port']
+        template = re.sub('<acct_port>', acct_port, template)
+        
+        ##############################################################################################
+        #<TIME_ZONE>
+        TIME_ZONE = GUTS_CONSTANTS['TIME_ZONE']
+        template = re.sub('<TIME_ZONE>', TIME_ZONE, template)
+        
+        ##############################################################################################
+        #<STP_PRIORITY>
+        if access_switch.stp_root:
+            STP_PRIORITY = '28672'
+        else:
+            STP_PRIORITY = '32768'
+        template = re.sub('<STP_PRIORITY>', str(STP_PRIORITY), template)
+        
+        
+        ##############################################################################################
+        #<PORTS_DESCRIPTION>
+        # set port 1 description PPPOE-CLIENT
+        # set port 2 description PPPOE-CLIENT
+        # ...
+        PORTS_DESCRIPTION = ''
+        for port in access_switch.port_of_access_switch_set.all():
+            description = net_lib.translit(port.description)
+            PORTS_DESCRIPTION += '  set port %s description %s"\n' % (port.num_in_switch, description)
+        template = re.sub('<PORTS_DESCRIPTION>', PORTS_DESCRIPTION, template)
+        
+        
+        #<SNMP_RW_COMMUNITY>
+        SNMP_RW_COMMUNITY = GUTS_CONSTANTS['SNMP_RW_COMMUNITY']
+        template = re.sub('<SNMP_RW_COMMUNITY>', SNMP_RW_COMMUNITY, template)
+        
         try:
             cfg_file.write(template)
             access_switch.cfg_file.save(dst_file,File(cfg_file),save=False)
