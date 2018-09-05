@@ -1236,6 +1236,9 @@ def zte_cfg(access_switch):
         # <IGMP_SNOOPING_VLANS>
         # set igmp snooping add vlan 1451-1474
         VLAN_ENABLE = ''
+        used_vlans_intervals = net_lib.arr_to_interval(used_vlans)
+        for vlan_interval in used_vlans_intervals.split(',') :
+            VLAN_ENABLE += '  set vlan %s enable\n' % vlan_interval
         
         UNTAG_VLANS = ''
         TAG_VLANS = ''
@@ -1258,7 +1261,6 @@ def zte_cfg(access_switch):
         IGMP_SNOOPING_VLANS = ''
         used_pppoe_vlans_intervals = net_lib.arr_to_interval(used_pppoe_vlans)
         for vlan_interval in used_pppoe_vlans_intervals.split(',') :
-            VLAN_ENABLE += '  set vlan %s enable\n' % vlan_interval
             IGMP_SNOOPING_VLANS += '  set igmp snooping add vlan %s\n' % vlan_interval
                 
         template = re.sub('<PORTS_PVID>', PORTS_PVID, template)
