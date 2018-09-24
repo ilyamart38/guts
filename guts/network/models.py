@@ -1516,7 +1516,8 @@ def huawei_cfg(access_switch):
             used_vlans.remove(0)
         used_vlans_intervals = net_lib.arr_to_interval(used_vlans)
         for vlan_interval in used_vlans_intervals.split(',') :
-            VLAN_BATCH += 'vlan batch %s \n\r' % vlan_interval.replace('-',' to ')
+            VLAN_BATCH += '''vlan batch %s \r
+''' % vlan_interval.replace('-',' to ')
         template = re.sub('<VLAN_BATCH>', VLAN_BATCH, template)
         
         ##############################################################################################
@@ -1568,38 +1569,61 @@ def huawei_cfg(access_switch):
             IF_CFG = ''
             #interface <if_name>
             # description <if_description>
-            IF_CFG += 'interface %s\n\r' % port.port_name
-            IF_CFG += ' description %s\n\r' % port.description
+            IF_CFG += '''interface %s\r
+''' % port.port_name
+            IF_CFG += ''' description %s\r
+''' % port.description
                 
             #PPPOE_IF
             if port in access_switch.pppoe_ports():
-                IF_CFG += ' undo port hybrid vlan 1\n\r'
+                IF_CFG += ''' undo port hybrid vlan 1\r
+'''
                 if port.u_vlan not in [0,1]:
                     used_pppoe_vlans.append(port.u_vlan)
                     # port hybrid untagged vlan <if_uvlan> 4024
                     # port hybrid pvid vlan <if_uvlan>
                     # igmp-snooping group-limit 15 vlan <if_uvlan>
                     # igmp-snooping group-policy 3500 vlan <if_uvlan>
-                    IF_CFG += ' port hybrid untagged vlan %s 4024\n\r' % port.u_vlan
-                    IF_CFG += ' port hybrid pvid vlan %s\n\r' % port.u_vlan
-                    IF_CFG += ' igmp-snooping group-limit 15 vlan %s\n\r' % port.u_vlan
-                    IF_CFG += ' igmp-snooping group-policy 3500 vlan %s\n\r' % port.u_vlan
-                IF_CFG += ' undo lldp enable\n\r'
-                IF_CFG += ' stp enable\n\r'
-                IF_CFG += ' stp edged-port enable\n\r'
-                IF_CFG += ' stp root-protection\n\r'
-                IF_CFG += ' storm-control broadcast min-rate 64 max-rate 64\n\r'
-                IF_CFG += ' storm-control multicast min-rate 64 max-rate 64\n\r'
-                IF_CFG += ' storm-control action error-down\n\r'
-                IF_CFG += ' storm-control enable trap\n\r'
-                IF_CFG += ' storm-control enable log\n\r'
-                IF_CFG += ' mac-address trap notification all\n\r'
-                IF_CFG += ' jumboframe enable 10240\n\r'
-                IF_CFG += ' trust 8021p\n\r'
-                IF_CFG += ' qos schedule-profile ERTH\n\r'
-                IF_CFG += ' loopback-detect enable\n\r'
-                IF_CFG += ' loopback-detect action shutdown\n\r'
-                IF_CFG += ' loopback-detect recovery-time 300\n\r'
+                    IF_CFG += ''' port hybrid untagged vlan %s 4024\r
+''' % port.u_vlan
+                    IF_CFG += ''' port hybrid pvid vlan %s\r
+''' % port.u_vlan
+                    IF_CFG += ''' igmp-snooping group-limit 15 vlan %s\r
+''' % port.u_vlan
+                    IF_CFG += ''' igmp-snooping group-policy 3500 vlan %s\r
+''' % port.u_vlan
+                IF_CFG += ''' undo lldp enable\r
+'''
+                IF_CFG += ''' stp enable\r
+'''
+                IF_CFG += ''' stp edged-port enable\r
+'''
+                IF_CFG += ''' stp root-protection\r
+'''
+                IF_CFG += ''' storm-control broadcast min-rate 64 max-rate 64\r
+'''
+                IF_CFG += ''' storm-control multicast min-rate 64 max-rate 64\r
+'''
+                IF_CFG += ''' storm-control action error-down\r
+'''
+                IF_CFG += ''' storm-control enable trap\r
+'''
+                IF_CFG += ''' storm-control enable log\r
+'''
+                IF_CFG += ''' mac-address trap notification all\r
+'''
+                IF_CFG += ''' jumboframe enable 10240\r
+'''
+                IF_CFG += ''' trust 8021p\r
+'''
+                IF_CFG += ''' qos schedule-profile ERTH\r
+'''
+                IF_CFG += ''' loopback-detect enable\r
+'''
+                IF_CFG += ''' loopback-detect action shutdown\r
+'''
+                IF_CFG += ''' loopback-detect recovery-time 300\r
+'''
             #UPSREAM_IF
             elif port in access_switch.uplink_ports():
                 # port link-type trunk
