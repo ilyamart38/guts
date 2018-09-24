@@ -435,7 +435,7 @@ class SW_MODEL(models.Model):
     fw_update_commands = models.TextField(blank = True, verbose_name = 'Описание процесса обновления прошивки')
     hw_version = models.CharField(max_length = 100, blank = True, verbose_name = 'HW версия')
     ports_count = models.IntegerField(default = 0, verbose_name = 'Количество портов')
-    ports_names = models.CharField(max_length = 500, blank = True, verbose_name = 'Названия портов в конфиге')
+    ports_names = models.CharField(max_length = 700, blank = True, verbose_name = 'Названия портов в конфиге')
     ports_types = models.CharField(max_length = 200, blank = True, verbose_name = 'Типы портов по умолчанию', help_text = create_help_text_for_type_ports())
     #cfg_template = models.CharField(max_length = 100, blank = True)
     cfg_template = models.FileField(upload_to = 'cfg_templates', verbose_name = 'Шаблон конфигурации', blank=True)
@@ -621,8 +621,10 @@ class ACCESS_SWITCH(models.Model):
             return
         elif self.sw_model.vendor.title == 'ZTE':
             zte_cfg(self)
-            
-        print('>>>>>',self.sw_model.vendor.title)
+        elif self.sw_model.vendor.title == 'Huawei':
+            huawei_cfg(self)
+        else:
+            print('>>>>> <%s>' % self.sw_model.vendor.title)
         
 
     def gw(self):
@@ -1448,6 +1450,319 @@ def zte_cfg(access_switch):
         #<SNMP_RW_COMMUNITY>
         SNMP_RW_COMMUNITY = GUTS_CONSTANTS['SNMP_RW_COMMUNITY']
         template = re.sub('<SNMP_RW_COMMUNITY>', SNMP_RW_COMMUNITY, template)
+        
+        try:
+            cfg_file.write(template)
+            access_switch.cfg_file.save(dst_file,File(cfg_file),save=False)
+            # Закрываем и удаляем временный файл
+            cfg_file.close()
+        except IOError as err_str:
+            print('ERROR!!! Неудалось записать файл для записи конфига!!!')
+            print('< ' + str(err_str) + ' >')
+            return
+        os.remove(tmp_cfg_file_path)
+        access_switch.save()
+    
+
+def huawei_cfg(access_switch):
+    # определяем шаблон конфигурации по модели коммутатора
+    template_file = access_switch.sw_model.cfg_template
+    dst_file = '%s_%s.cfg' % (access_switch.pk, timezone.now().strftime('%Y%m%d_%H%M'))
+    # Если определен шаблон конфига пытаемся его открыть
+    if template_file != '':
+        # Пытаемся открыть файл шаблона конфигурации
+        try:
+            template = open(template_file.path).read()
+        except IOError as err_str:
+            print('ERROR!!! Неудалось прочитать файл шаблона!!!')
+            print('< ' + str(err_str) + ' >')
+            return
+        # Пытаемся создать файл конфигурации для данного коммутатора
+        try:
+            tmp_cfg_file_path = '/tmp/guts_cfg.tmp'
+            cfg_file = open(tmp_cfg_file_path,"w").close()
+            cfg_file = open(tmp_cfg_file_path,"r+")
+        except IOError as err_str:
+            print('ERROR!!! Неудалось создать файл для записи конфига!!!')
+            print('< ' + str(err_str) + ' >')
+            return
+        ##############################################################################################
+        #<THREAD_NUM>           номер нитки (111-1)
+        THREAD_NUM = '%s-%s.%s.%s-%s' % (
+                    access_switch.access_node.thread.campus.prefix,
+                    access_switch.access_node.thread.campus.ms.mgs.mgs_num,
+                    access_switch.access_node.thread.campus.ms.num_in_mgs,
+                    access_switch.access_node.thread.campus.num_in_ms,
+                    access_switch.access_node.thread.num_in_campus)
+        template = re.sub('<THREAD_NUM>', THREAD_NUM, template)
+        
+        ##############################################################################################
+        #<ADDRESS>              адрес_латиницей
+        ADDRESS = net_lib.translit(access_switch.access_node.address)
+        template = re.sub('<ADDRESS>', ADDRESS, template)
+        
+        ##############################################################################################
+        #<EQM_IP>
+        EQM_IP = GUTS_CONSTANTS['EQM_IP']
+        template = re.sub('<EQM_IP>', EQM_IP, template)
+        
+        ##############################################################################################
+        #<VLAN_BATCH>
+        VLAN_BATCH = ''
+        used_vlans = list(access_switch.used_vlans().keys())
+        if 1 in used_vlans:
+            used_vlans.remove(1)
+        if 0 in used_vlans:
+            used_vlans.remove(0)
+        used_vlans_intervals = net_lib.arr_to_interval(used_vlans)
+        for vlan_interval in used_vlans_intervals.split(',') :
+            VLAN_BATCH += 'vlan batch %s \r\n' % vlan_interval.replace('-',' to ')
+        template = re.sub('<VLAN_BATCH>', VLAN_BATCH, template)
+        
+        ##############################################################################################
+        #<TIME_ZONE>
+        TIME_ZONE = GUTS_CONSTANTS['TIME_ZONE']
+        template = re.sub('<TIME_ZONE>', TIME_ZONE, template)
+        
+        ##############################################################################################
+        #<RADIUS1_IP>
+        RADIUS1_IP = GUTS_CONSTANTS['RADIUS1_IP']
+        template = re.sub('<RADIUS1_IP>', RADIUS1_IP, template)
+        
+        ##############################################################################################
+        #<RADIUS2_IP>
+        RADIUS2_IP = GUTS_CONSTANTS['RADIUS2_IP']
+        template = re.sub('<RADIUS2_IP>', RADIUS2_IP, template)
+        
+        ##############################################################################################
+        #<radius_port>
+        radius_port = GUTS_CONSTANTS['radius_port']
+        template = re.sub('<radius_port>', radius_port, template)
+        
+        ##############################################################################################
+        #<radius_key>
+        radius_key = GUTS_CONSTANTS['radius_key']
+        template = re.sub('<radius_key>', radius_key, template)
+        
+        ##############################################################################################
+        #<ADMIN_PROXY_IP>       
+        ADMIN_PROXY_IP = GUTS_CONSTANTS['ADMIN_PROXY_IP']
+        template = re.sub('<ADMIN_PROXY_IP>', ADMIN_PROXY_IP, template)
+        
+        ##############################################################################################
+        #<GW>                   ip-адрес шлюза поумолчанию
+        GW = access_switch.network.gw
+        template = re.sub('<GW>', GW, template)
+        
+        ##############################################################################################
+        #<IP_ADDRESS_CPE>         
+        SNMP_CONTACT = GUTS_CONSTANTS['IP_ADDRESS_CPE']
+        template = re.sub('<IP_ADDRESS_CPE>', SNMP_CONTACT, template)
+        
+        ##############################################################################################
+        #<INTERFACES_CFG>
+        INTERFACES_CFG = ''
+        pppoe_ports_list = list(access_switch.pppoe_ports().values_list('num_in_switch', flat = True))
+        used_pppoe_vlans = []
+        for port in access_switch.port_of_access_switch_set.all():
+            IF_CFG = ''
+            #interface <if_name>
+            # description <if_description>
+            IF_CFG += 'interface %s\r\n' % port.port_name
+            IF_CFG += ' description %s\r\n' % port.description
+                
+            #PPPOE_IF
+            if port in access_switch.pppoe_ports():
+                IF_CFG += ' undo port hybrid vlan 1\r\n'
+                if port.u_vlan not in [0,1]:
+                    used_pppoe_vlans.append(port.u_vlan)
+                    # port hybrid untagged vlan <if_uvlan> 4024
+                    # port hybrid pvid vlan <if_uvlan>
+                    # igmp-snooping group-limit 15 vlan <if_uvlan>
+                    # igmp-snooping group-policy 3500 vlan <if_uvlan>
+                    IF_CFG += ' port hybrid untagged vlan %s 4024\r\n' % port.u_vlan
+                    IF_CFG += ' port hybrid pvid vlan %s\r\n' % port.u_vlan
+                    IF_CFG += ' igmp-snooping group-limit 15 vlan %s\r\n' % port.u_vlan
+                    IF_CFG += ' igmp-snooping group-policy 3500 vlan %s\r\n' % port.u_vlan
+                IF_CFG += ' undo lldp enable\r\n'
+                IF_CFG += ' stp enable\r\n'
+                IF_CFG += ' stp edged-port enable\r\n'
+                IF_CFG += ' stp root-protection\r\n'
+                IF_CFG += ' storm-control broadcast min-rate 64 max-rate 64\r\n'
+                IF_CFG += ' storm-control multicast min-rate 64 max-rate 64\r\n'
+                IF_CFG += ' storm-control action error-down\r\n'
+                IF_CFG += ' storm-control enable trap\r\n'
+                IF_CFG += ' storm-control enable log\r\n'
+                IF_CFG += ' mac-address trap notification all\r\n'
+                IF_CFG += ' jumboframe enable 10240\r\n'
+                IF_CFG += ' trust 8021p\r\n'
+                IF_CFG += ' qos schedule-profile ERTH\r\n'
+                IF_CFG += ' loopback-detect enable\r\n'
+                IF_CFG += ' loopback-detect action shutdown\r\n'
+                IF_CFG += ' loopback-detect recovery-time 300\r\n'
+            #UPSREAM_IF
+            elif port in access_switch.uplink_ports():
+                # port link-type trunk
+                # port trunk allow-pass vlan 99 101 to 113 1001 to 1700 3701 to 3713 4024
+                # undo lldp tlv-enable dot1-tlv protocol-vlan-id
+                # lldp tlv-enable dot1-tlv protocol-identity
+                # undo lldp tlv-enable med-tlv all
+                # undo lldp tlv-enable dot3-tlv all
+                # jumboframe enable 10240
+                # trust 8021p
+                # qos schedule-profile ERTH
+                # traffic-policy IPOE inbound                
+                pass
+                IF_CFG += ' port link-type trunk\r\n'
+                for vlan_interval in used_vlans_intervals.split(',') :
+                    IF_CFG += ' port trunk allow-pass vlan %s\r\n' % vlan_interval.replace('-',' to ')
+                IF_CFG += ' undo lldp tlv-enable dot1-tlv protocol-vlan-id\r\n'
+                IF_CFG += ' lldp tlv-enable dot1-tlv protocol-identity\r\n'
+                IF_CFG += ' undo lldp tlv-enable med-tlv all\r\n'
+                IF_CFG += ' undo lldp tlv-enable dot3-tlv all\r\n'
+                IF_CFG += ' jumboframe enable 10240\r\n'
+                IF_CFG += ' trust 8021p\r\n'
+                IF_CFG += ' qos schedule-profile ERTH\r\n'
+                IF_CFG += ' traffic-policy IPOE inbound\r\n'
+            elif port in access_switch.ip_ports():
+                IF_CFG += ' undo port hybrid vlan 1\r\n'
+                if port.u_vlan not in [0,1]:
+                    # port hybrid untagged vlan 3900
+                    # port hybrid pvid vlan 3900
+                    IF_CFG += ' port hybrid untagged vlan %s\r\n' % port.u_vlan
+                    IF_CFG += ' port hybrid pvid vlan %s\r\n' % port.u_vlan
+                if port.t_vlans != '':
+                    for vlan_interval in port.t_vlans.split(',') :
+                        # port hybrid tagged vlan 3151
+                        IF_CFG += ' port hybrid tagged vlan %s\r\n' % vlan_interval.replace('-',' to ')
+                # undo lldp enable
+                # stp enable
+                # stp edged-port enable
+                # stp root-protection
+                # storm-control broadcast min-rate 64 max-rate 64
+                # storm-control multicast min-rate 64 max-rate 64
+                # storm-control action error-down
+                # storm-control enable trap
+                # storm-control enable log
+                # traffic-policy IPOE inbound
+                # mac-address trap notification all
+                # jumboframe enable 10240
+                # trust 8021p
+                # qos schedule-profile ERTH
+                # loopback-detect enable
+                # loopback-detect action shutdown
+                # loopback-detect recovery-time 300
+                # port-isolate enable group 1
+                
+                IF_CFG += ' undo lldp enable\r\n'
+                IF_CFG += ' stp enable\r\n'
+                IF_CFG += ' stp edged-port enable\r\n'
+                IF_CFG += ' stp root-protection\r\n'
+                IF_CFG += ' storm-control broadcast min-rate 64 max-rate 64\r\n'
+                IF_CFG += ' storm-control multicast min-rate 64 max-rate 64\r\n'
+                IF_CFG += ' storm-control action error-down\r\n'
+                IF_CFG += ' storm-control enable trap\r\n'
+                IF_CFG += ' storm-control enable log\r\n'
+                IF_CFG += ' traffic-policy IPOE inbound\r\n'
+                IF_CFG += ' mac-address trap notification all\r\n'
+                IF_CFG += ' jumboframe enable 10240\r\n'
+                IF_CFG += ' trust 8021p\r\n'
+                IF_CFG += ' qos schedule-profile ERTH\r\n'
+                IF_CFG += ' loopback-detect enable\r\n'
+                IF_CFG += ' loopback-detect action shutdown\r\n'
+                IF_CFG += ' loopback-detect recovery-time 300\r\n'
+            elif port in access_switch.gag_ports():
+                # undo port hybrid vlan 1
+                # stp disable
+                # undo ntdp enable
+                # undo ndp enable
+                # undo lldp enable
+                # storm-control action block
+                IF_CFG += ' undo port hybrid vlan 1\r\n'
+                IF_CFG += ' stp disable\r\n'
+                IF_CFG += ' undo ntdp enable\r\n'
+                IF_CFG += ' undo ndp enable\r\n'
+                IF_CFG += ' undo lldp enable\r\n'
+                IF_CFG += ' storm-control action block\r\n'
+                if 'GigabitEthernet' in port.port_name:
+                    # undo negotiation auto
+                    # speed 100
+                    IF_CFG += ' undo negotiation auto\r\n'
+                    IF_CFG += ' speed 100\r\n'
+            
+            # TRAFFIC_SEGMENTATION
+            if port not in access_switch.uplink_ports():
+                IF_CFG += ' port-isolate enable group 1\r\n'
+            INTERFACES_CFG += '#\r\n'
+            INTERFACES_CFG += IF_CFG
+        template = re.sub('<INTERFACES_CFG>', INTERFACES_CFG, template)
+        ##############################################################################################
+        #<IGMP_SNOOPING_VLANS_CFG>
+        #<IGMP_USER_VLANS>
+        IGMP_SNOOPING_VLANS_CFG = ''
+        IGMP_USER_VLANS = ''
+        #used_pppoe_vlans_intervals = net_lib.arr_to_interval(used_pppoe_vlans)
+        for vlan in used_pppoe_vlans:
+            IGMP_SNOOPING_VLANS_CFG += 'vlan %s\r\n' % vlan
+            IGMP_SNOOPING_VLANS_CFG += ' igmp-snooping enable\r\n'
+        template = re.sub('<IGMP_SNOOPING_VLANS_CFG>', IGMP_SNOOPING_VLANS_CFG, template)
+        
+        for vlan_interval in net_lib.arr_to_interval(used_pppoe_vlans).split(','):
+            # multicast-vlan user-vlan 1601 to 1624
+            #<IGMP_USER_VLANS>
+            IGMP_USER_VLANS += ' multicast-vlan user-vlan %s\r\n' % vlan_interval.replace('-', ' to ')
+        template = re.sub('<IGMP_USER_VLANS>', IGMP_USER_VLANS, template)
+        
+        ##############################################################################################
+        #<SNMP_CONTACT>         
+        SNMP_CONTACT = GUTS_CONSTANTS['SNMP_CONTACT']
+        template = re.sub('<SNMP_CONTACT>', SNMP_CONTACT, template)
+        
+        ##############################################################################################
+        #<MGMT_VLAN>              номер влана управления коммутатора
+        MGMT_VLAN = GUTS_CONSTANTS['MGMT_VLAN']
+        template = re.sub('<MGMT_VLAN>', MGMT_VLAN, template)
+        
+        ##############################################################################################
+        #<MGMT_IP>              ip-адрес коммутатора
+        MGMT_IP = access_switch.ip
+        template = re.sub('<MGMT_IP>', MGMT_IP, template)
+        
+        ##############################################################################################
+        #<MGMT_LONG_MASK>       маска подсети управления
+        if not access_switch.network:
+            access_switch.save()
+        MGMT_LONG_MASK = str(ipaddress.ip_network(access_switch.network).netmask)
+        template = re.sub('<MGMT_LONG_MASK>', MGMT_LONG_MASK, template)
+            
+        ##############################################################################################
+        #<NS4_IP>
+        NS4_IP = GUTS_CONSTANTS['NS4_IP']
+        template = re.sub('<NS4_IP>', NS4_IP, template)
+        
+        ##############################################################################################
+        #<NS2_IP>
+        NS2_IP = GUTS_CONSTANTS['NS2_IP']
+        template = re.sub('<NS2_IP>', NS2_IP, template)
+        
+        ##############################################################################################
+        #<STP_PRIORITY>
+        if access_switch.stp_root:
+            STP_PRIORITY = '28672'
+        else:
+            STP_PRIORITY = '32768'
+        template = re.sub('<STP_PRIORITY>', str(STP_PRIORITY), template)
+        
+        ##############################################################################################
+        #<SNMP_RW_COMMUNITY>
+        SNMP_RW_COMMUNITY = GUTS_CONSTANTS['SNMP_RW_COMMUNITY']
+        template = re.sub('<SNMP_RW_COMMUNITY>', SNMP_RW_COMMUNITY, template)
+
+
+
+
+        
+        
         
         try:
             cfg_file.write(template)
