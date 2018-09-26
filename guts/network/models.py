@@ -1589,7 +1589,7 @@ def huawei_cfg(access_switch):
                 if port.u_vlan not in [0,1]:
                     # igmp-snooping group-limit 15 vlan <if_uvlan>
                     # igmp-snooping group-policy 3500 vlan <if_uvlan>
-                    IF_CFG += ' igmp-snooping group-limit 15 vlan %s\n' % port.u_vlan
+                    IF_CFG += ' igmp-snooping group-limit 15 vlan %s\n\n' % port.u_vlan
                     IF_CFG += ' igmp-snooping group-policy 3500 vlan %s\n' % port.u_vlan
                 IF_CFG += ' mac-address trap notification all\n'
                 IF_CFG += ' jumboframe enable 10240\n'
