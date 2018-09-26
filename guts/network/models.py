@@ -595,7 +595,6 @@ class ACCESS_SWITCH(models.Model):
 
     def cfg_download(self):
         download_text = ''
-        print('start cfg')
         if self.sw_model.cfg_download_commands:
             # если файл конфигурации не генерировался после последних изменений, то его необходимо сгенерировать
             #if self.cfg_file == '':
@@ -1516,8 +1515,7 @@ def huawei_cfg(access_switch):
             used_vlans.remove(0)
         used_vlans_intervals = net_lib.arr_to_interval(used_vlans)
         for vlan_interval in used_vlans_intervals.split(',') :
-            VLAN_BATCH += '''vlan batch %s \r
-''' % vlan_interval.replace('-',' to ')
+            VLAN_BATCH += 'vlan batch %s \n' % vlan_interval.replace('-',' to ')
         template = re.sub('<VLAN_BATCH>', VLAN_BATCH, template)
         
         ##############################################################################################
@@ -1569,61 +1567,38 @@ def huawei_cfg(access_switch):
             IF_CFG = ''
             #interface <if_name>
             # description <if_description>
-            IF_CFG += '''interface %s\r
-''' % port.port_name
-            IF_CFG += ''' description %s\r
-''' % port.description
+            IF_CFG += 'interface %s\n' % port.port_name
+            IF_CFG += ' description %s\n' % port.description
                 
             #PPPOE_IF
             if port in access_switch.pppoe_ports():
-                IF_CFG += ''' undo port hybrid vlan 1\r
-'''
+                IF_CFG += ' undo port hybrid vlan 1\n'
                 if port.u_vlan not in [0,1]:
                     used_pppoe_vlans.append(port.u_vlan)
                     # port hybrid untagged vlan <if_uvlan> 4024
                     # port hybrid pvid vlan <if_uvlan>
                     # igmp-snooping group-limit 15 vlan <if_uvlan>
                     # igmp-snooping group-policy 3500 vlan <if_uvlan>
-                    IF_CFG += ''' port hybrid untagged vlan %s 4024\r
-''' % port.u_vlan
-                    IF_CFG += ''' port hybrid pvid vlan %s\r
-''' % port.u_vlan
-                    IF_CFG += ''' igmp-snooping group-limit 15 vlan %s\r
-''' % port.u_vlan
-                    IF_CFG += ''' igmp-snooping group-policy 3500 vlan %s\r
-''' % port.u_vlan
-                IF_CFG += ''' undo lldp enable\r
-'''
-                IF_CFG += ''' stp enable\r
-'''
-                IF_CFG += ''' stp edged-port enable\r
-'''
-                IF_CFG += ''' stp root-protection\r
-'''
-                IF_CFG += ''' storm-control broadcast min-rate 64 max-rate 64\r
-'''
-                IF_CFG += ''' storm-control multicast min-rate 64 max-rate 64\r
-'''
-                IF_CFG += ''' storm-control action error-down\r
-'''
-                IF_CFG += ''' storm-control enable trap\r
-'''
-                IF_CFG += ''' storm-control enable log\r
-'''
-                IF_CFG += ''' mac-address trap notification all\r
-'''
-                IF_CFG += ''' jumboframe enable 10240\r
-'''
-                IF_CFG += ''' trust 8021p\r
-'''
-                IF_CFG += ''' qos schedule-profile ERTH\r
-'''
-                IF_CFG += ''' loopback-detect enable\r
-'''
-                IF_CFG += ''' loopback-detect action shutdown\r
-'''
-                IF_CFG += ''' loopback-detect recovery-time 300\r
-'''
+                    IF_CFG += ' port hybrid untagged vlan %s 4024\n' % port.u_vlan
+                    IF_CFG += ' port hybrid pvid vlan %s\n' % port.u_vlan
+                    IF_CFG += ' igmp-snooping group-limit 15 vlan %s\n' % port.u_vlan
+                    IF_CFG += ' igmp-snooping group-policy 3500 vlan %s\n' % port.u_vlan
+                IF_CFG += ' undo lldp enable\n'
+                IF_CFG += ' stp enable\n'
+                IF_CFG += ' stp edged-port enable\n'
+                IF_CFG += ' stp root-protection\n'
+                IF_CFG += ' storm-control broadcast min-rate 64 max-rate 64\n'
+                IF_CFG += ' storm-control multicast min-rate 64 max-rate 64\n'
+                IF_CFG += ' storm-control action error-down\n'
+                IF_CFG += ' storm-control enable trap\n'
+                IF_CFG += ' storm-control enable log\n'
+                IF_CFG += ' mac-address trap notification all\n'
+                IF_CFG += ' jumboframe enable 10240\n'
+                IF_CFG += ' trust 8021p\n'
+                IF_CFG += ' qos schedule-profile ERTH\n'
+                IF_CFG += ' loopback-detect enable\n'
+                IF_CFG += ' loopback-detect action shutdown\n'
+                IF_CFG += ' loopback-detect recovery-time 300\n'
             #UPSREAM_IF
             elif port in access_switch.uplink_ports():
                 # port link-type trunk
@@ -1637,28 +1612,28 @@ def huawei_cfg(access_switch):
                 # qos schedule-profile ERTH
                 # traffic-policy IPOE inbound                
                 pass
-                IF_CFG += ' port link-type trunk\n\r'
+                IF_CFG += ' port link-type trunk\n'
                 for vlan_interval in used_vlans_intervals.split(',') :
-                    IF_CFG += ' port trunk allow-pass vlan %s\n\r' % vlan_interval.replace('-',' to ')
-                IF_CFG += ' undo lldp tlv-enable dot1-tlv protocol-vlan-id\n\r'
-                IF_CFG += ' lldp tlv-enable dot1-tlv protocol-identity\n\r'
-                IF_CFG += ' undo lldp tlv-enable med-tlv all\n\r'
-                IF_CFG += ' undo lldp tlv-enable dot3-tlv all\n\r'
-                IF_CFG += ' jumboframe enable 10240\n\r'
-                IF_CFG += ' trust 8021p\n\r'
-                IF_CFG += ' qos schedule-profile ERTH\n\r'
-                IF_CFG += ' traffic-policy IPOE inbound\n\r'
+                    IF_CFG += ' port trunk allow-pass vlan %s\n' % vlan_interval.replace('-',' to ')
+                IF_CFG += ' undo lldp tlv-enable dot1-tlv protocol-vlan-id\n'
+                IF_CFG += ' lldp tlv-enable dot1-tlv protocol-identity\n'
+                IF_CFG += ' undo lldp tlv-enable med-tlv all\n'
+                IF_CFG += ' undo lldp tlv-enable dot3-tlv all\n'
+                IF_CFG += ' jumboframe enable 10240\n'
+                IF_CFG += ' trust 8021p\n'
+                IF_CFG += ' qos schedule-profile ERTH\n'
+                IF_CFG += ' traffic-policy IPOE inbound\n'
             elif port in access_switch.ip_ports():
-                IF_CFG += ' undo port hybrid vlan 1\n\r'
+                IF_CFG += ' undo port hybrid vlan 1\n'
                 if port.u_vlan not in [0,1]:
                     # port hybrid untagged vlan 3900
                     # port hybrid pvid vlan 3900
-                    IF_CFG += ' port hybrid untagged vlan %s\n\r' % port.u_vlan
-                    IF_CFG += ' port hybrid pvid vlan %s\n\r' % port.u_vlan
+                    IF_CFG += ' port hybrid untagged vlan %s\n' % port.u_vlan
+                    IF_CFG += ' port hybrid pvid vlan %s\n' % port.u_vlan
                 if port.t_vlans != '':
                     for vlan_interval in port.t_vlans.split(',') :
                         # port hybrid tagged vlan 3151
-                        IF_CFG += ' port hybrid tagged vlan %s\n\r' % vlan_interval.replace('-',' to ')
+                        IF_CFG += ' port hybrid tagged vlan %s\n' % vlan_interval.replace('-',' to ')
                 # undo lldp enable
                 # stp enable
                 # stp edged-port enable
@@ -1678,23 +1653,23 @@ def huawei_cfg(access_switch):
                 # loopback-detect recovery-time 300
                 # port-isolate enable group 1
                 
-                IF_CFG += ' undo lldp enable\n\r'
-                IF_CFG += ' stp enable\n\r'
-                IF_CFG += ' stp edged-port enable\n\r'
-                IF_CFG += ' stp root-protection\n\r'
-                IF_CFG += ' storm-control broadcast min-rate 64 max-rate 64\n\r'
-                IF_CFG += ' storm-control multicast min-rate 64 max-rate 64\n\r'
-                IF_CFG += ' storm-control action error-down\n\r'
-                IF_CFG += ' storm-control enable trap\n\r'
-                IF_CFG += ' storm-control enable log\n\r'
-                IF_CFG += ' traffic-policy IPOE inbound\n\r'
-                IF_CFG += ' mac-address trap notification all\n\r'
-                IF_CFG += ' jumboframe enable 10240\n\r'
-                IF_CFG += ' trust 8021p\n\r'
-                IF_CFG += ' qos schedule-profile ERTH\n\r'
-                IF_CFG += ' loopback-detect enable\n\r'
-                IF_CFG += ' loopback-detect action shutdown\n\r'
-                IF_CFG += ' loopback-detect recovery-time 300\n\r'
+                IF_CFG += ' undo lldp enable\n'
+                IF_CFG += ' stp enable\n'
+                IF_CFG += ' stp edged-port enable\n'
+                IF_CFG += ' stp root-protection\n'
+                IF_CFG += ' storm-control broadcast min-rate 64 max-rate 64\n'
+                IF_CFG += ' storm-control multicast min-rate 64 max-rate 64\n'
+                IF_CFG += ' storm-control action error-down\n'
+                IF_CFG += ' storm-control enable trap\n'
+                IF_CFG += ' storm-control enable log\n'
+                IF_CFG += ' traffic-policy IPOE inbound\n'
+                IF_CFG += ' mac-address trap notification all\n'
+                IF_CFG += ' jumboframe enable 10240\n'
+                IF_CFG += ' trust 8021p\n'
+                IF_CFG += ' qos schedule-profile ERTH\n'
+                IF_CFG += ' loopback-detect enable\n'
+                IF_CFG += ' loopback-detect action shutdown\n'
+                IF_CFG += ' loopback-detect recovery-time 300\n'
             elif port in access_switch.gag_ports():
                 # undo port hybrid vlan 1
                 # stp disable
@@ -1702,22 +1677,22 @@ def huawei_cfg(access_switch):
                 # undo ndp enable
                 # undo lldp enable
                 # storm-control action block
-                IF_CFG += ' undo port hybrid vlan 1\n\r'
-                IF_CFG += ' stp disable\n\r'
-                IF_CFG += ' undo ntdp enable\n\r'
-                IF_CFG += ' undo ndp enable\n\r'
-                IF_CFG += ' undo lldp enable\n\r'
-                IF_CFG += ' storm-control action block\n\r'
+                IF_CFG += ' undo port hybrid vlan 1\n'
+                IF_CFG += ' stp disable\n'
+                IF_CFG += ' undo ntdp enable\n'
+                IF_CFG += ' undo ndp enable\n'
+                IF_CFG += ' undo lldp enable\n'
+                IF_CFG += ' storm-control action block\n'
                 if 'GigabitEthernet' in port.port_name:
                     # undo negotiation auto
                     # speed 100
-                    IF_CFG += ' undo negotiation auto\n\r'
-                    IF_CFG += ' speed 100\n\r'
+                    IF_CFG += ' undo negotiation auto\n'
+                    IF_CFG += ' speed 100\n'
             
             # TRAFFIC_SEGMENTATION
             if port not in access_switch.uplink_ports():
-                IF_CFG += ' port-isolate enable group 1\n\r'
-            INTERFACES_CFG += '#\n\r'
+                IF_CFG += ' port-isolate enable group 1\n'
+            INTERFACES_CFG += '#\n'
             INTERFACES_CFG += IF_CFG
         template = re.sub('<INTERFACES_CFG>', INTERFACES_CFG, template)
         ##############################################################################################
@@ -1727,14 +1702,14 @@ def huawei_cfg(access_switch):
         IGMP_USER_VLANS = ''
         #used_pppoe_vlans_intervals = net_lib.arr_to_interval(used_pppoe_vlans)
         for vlan in used_pppoe_vlans:
-            IGMP_SNOOPING_VLANS_CFG += 'vlan %s\n\r' % vlan
-            IGMP_SNOOPING_VLANS_CFG += ' igmp-snooping enable\n\r'
+            IGMP_SNOOPING_VLANS_CFG += 'vlan %s\n' % vlan
+            IGMP_SNOOPING_VLANS_CFG += ' igmp-snooping enable\n'
         template = re.sub('<IGMP_SNOOPING_VLANS_CFG>', IGMP_SNOOPING_VLANS_CFG, template)
         
         for vlan_interval in net_lib.arr_to_interval(used_pppoe_vlans).split(','):
             # multicast-vlan user-vlan 1601 to 1624
             #<IGMP_USER_VLANS>
-            IGMP_USER_VLANS += ' multicast-vlan user-vlan %s\n\r' % vlan_interval.replace('-', ' to ')
+            IGMP_USER_VLANS += ' multicast-vlan user-vlan %s\n' % vlan_interval.replace('-', ' to ')
         template = re.sub('<IGMP_USER_VLANS>', IGMP_USER_VLANS, template)
         
         ##############################################################################################
@@ -1781,13 +1756,6 @@ def huawei_cfg(access_switch):
         #<SNMP_RW_COMMUNITY>
         SNMP_RW_COMMUNITY = GUTS_CONSTANTS['SNMP_RW_COMMUNITY']
         template = re.sub('<SNMP_RW_COMMUNITY>', SNMP_RW_COMMUNITY, template)
-
-
-
-
-        
-        
-        
         try:
             cfg_file.write(template)
             access_switch.cfg_file.save(dst_file,File(cfg_file),save=False)
@@ -1797,6 +1765,16 @@ def huawei_cfg(access_switch):
             print('ERROR!!! Неудалось записать файл для записи конфига!!!')
             print('< ' + str(err_str) + ' >')
             return
-        os.remove(tmp_cfg_file_path)
+        #os.remove(tmp_cfg_file_path)
         access_switch.save()
-    
+
+        # Теперь нужно поменять окончания строк в файле с \n на \r\n
+        cfg_file = open(access_switch.cfg_file.path, "r")
+        cfg_text_in = cfg_file.read()
+        cfg_file.close()
+        cfg_file = open(access_switch.cfg_file.path, "w")
+        cfg_text_out =''
+        for line in cfg_text_in.split('\n'):
+            cfg_text_out += '''%s\r\n''' % line
+        cfg_file.write(cfg_text_out)
+        cfg_file.close
