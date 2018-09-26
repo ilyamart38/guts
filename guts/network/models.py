@@ -1577,28 +1577,29 @@ def huawei_cfg(access_switch):
                     used_pppoe_vlans.append(port.u_vlan)
                     # port hybrid untagged vlan <if_uvlan> 4024
                     # port hybrid pvid vlan <if_uvlan>
-                    # igmp-snooping group-limit 15 vlan <if_uvlan>
-                    # igmp-snooping group-policy 3500 vlan <if_uvlan>
-                    IF_CFG += ' port hybrid untagged vlan %s 4024\n' % port.u_vlan
                     IF_CFG += ' port hybrid pvid vlan %s\n' % port.u_vlan
-                    IF_CFG += ' igmp-snooping group-limit 15 vlan %s\n' % port.u_vlan
-                    IF_CFG += ' igmp-snooping group-policy 3500 vlan %s\n' % port.u_vlan
+                    IF_CFG += ' port hybrid untagged vlan %s 4024\n' % port.u_vlan
+                IF_CFG += ' loopback-detect recovery-time 300\n'
+                IF_CFG += ' loopback-detect enable\n'
+                IF_CFG += ' loopback-detect action shutdown\n'
                 IF_CFG += ' undo lldp enable\n'
                 IF_CFG += ' stp enable\n'
-                IF_CFG += ' stp edged-port enable\n'
                 IF_CFG += ' stp root-protection\n'
+                IF_CFG += ' stp edged-port enable\n'
+                if port.u_vlan not in [0,1]:
+                    # igmp-snooping group-limit 15 vlan <if_uvlan>
+                    # igmp-snooping group-policy 3500 vlan <if_uvlan>
+                    IF_CFG += ' igmp-snooping group-limit 15 vlan %s\n' % port.u_vlan
+                    IF_CFG += ' igmp-snooping group-policy 3500 vlan %s\n' % port.u_vlan
+                IF_CFG += ' mac-address trap notification all\n'
+                IF_CFG += ' jumboframe enable 10240\n'
+                IF_CFG += ' trust 8021p\n'
+                IF_CFG += ' qos schedule-profile ERTH\n'
                 IF_CFG += ' storm-control broadcast min-rate 64 max-rate 64\n'
                 IF_CFG += ' storm-control multicast min-rate 64 max-rate 64\n'
                 IF_CFG += ' storm-control action error-down\n'
                 IF_CFG += ' storm-control enable trap\n'
                 IF_CFG += ' storm-control enable log\n'
-                IF_CFG += ' mac-address trap notification all\n'
-                IF_CFG += ' jumboframe enable 10240\n'
-                IF_CFG += ' trust 8021p\n'
-                IF_CFG += ' qos schedule-profile ERTH\n'
-                IF_CFG += ' loopback-detect enable\n'
-                IF_CFG += ' loopback-detect action shutdown\n'
-                IF_CFG += ' loopback-detect recovery-time 300\n'
             #UPSREAM_IF
             elif port in access_switch.uplink_ports():
                 # port link-type trunk
