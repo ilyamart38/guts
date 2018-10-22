@@ -1587,10 +1587,11 @@ def huawei_cfg(access_switch):
                 if port.u_vlan not in [0,1]:
                     # igmp-snooping group-limit 15 vlan <if_uvlan>
                     # igmp-snooping group-policy 3500 vlan <if_uvlan>
-                    IF_CFG += ' igmp-snooping group-limit 15 vlan %s\n' % port.u_vlan
                     IF_CFG += ' igmp-snooping group-policy 3500 vlan %s\n' % port.u_vlan
+                    IF_CFG += ' igmp-snooping group-limit 15 vlan %s\n' % port.u_vlan
                 IF_CFG += ' undo lldp enable\n'
                 #IF_CFG += ' stp enable\n'
+                IF_CFG += ' port-isolate enable group 1\n'
                 IF_CFG += ' mac-address trap notification all\n'
                 IF_CFG += ' jumboframe enable 10240\n'
                 IF_CFG += ' trust 8021p\n'
@@ -1624,6 +1625,8 @@ def huawei_cfg(access_switch):
                 IF_CFG += ' jumboframe enable 10240\n'
                 IF_CFG += ' trust 8021p\n'
                 IF_CFG += ' qos schedule-profile ERTH\n'
+                if port not in access_switch.uplink_ports():
+                    IF_CFG += ' port-isolate enable group 1\n'
             elif port in access_switch.ip_ports():
                 IF_CFG += ' undo port hybrid vlan 1\n'
                 if port.u_vlan not in [0,1]:
@@ -1664,6 +1667,7 @@ def huawei_cfg(access_switch):
                 IF_CFG += ' storm-control enable trap\n'
                 IF_CFG += ' storm-control enable log\n'
                 IF_CFG += ' traffic-policy IPOE inbound\n'
+                IF_CFG += ' port-isolate enable group 1\n'
                 IF_CFG += ' mac-address trap notification all\n'
                 IF_CFG += ' jumboframe enable 10240\n'
                 IF_CFG += ' trust 8021p\n'
@@ -1683,6 +1687,7 @@ def huawei_cfg(access_switch):
                 IF_CFG += ' undo ntdp enable\n'
                 IF_CFG += ' undo ndp enable\n'
                 IF_CFG += ' undo lldp enable\n'
+                IF_CFG += ' port-isolate enable group 1\n'
                 IF_CFG += ' storm-control action block\n'
                 if 'GigabitEthernet' in port.port_name:
                     # undo negotiation auto
@@ -1690,9 +1695,9 @@ def huawei_cfg(access_switch):
                     IF_CFG += ' undo negotiation auto\n'
                     IF_CFG += ' speed 100\n'
             
-            # TRAFFIC_SEGMENTATION
-            if port not in access_switch.uplink_ports():
-                IF_CFG += ' port-isolate enable group 1\n'
+            ## TRAFFIC_SEGMENTATION
+            #if port not in access_switch.uplink_ports():
+            #    IF_CFG += ' port-isolate enable group 1\n'
             INTERFACES_CFG += '#\n'
             INTERFACES_CFG += IF_CFG
         template = re.sub('<INTERFACES_CFG>', INTERFACES_CFG, template)
