@@ -1581,16 +1581,16 @@ def huawei_cfg(access_switch):
                     IF_CFG += ' port hybrid untagged vlan %s 4024\n' % port.u_vlan
                 IF_CFG += ' loopback-detect recovery-time 300\n'
                 IF_CFG += ' loopback-detect enable\n'
-                IF_CFG += ' loopback-detect action shutdown\n'
-                IF_CFG += ' undo lldp enable\n'
-                IF_CFG += ' stp enable\n'
+                #IF_CFG += ' loopback-detect action shutdown\n'
                 IF_CFG += ' stp root-protection\n'
                 IF_CFG += ' stp edged-port enable\n'
                 if port.u_vlan not in [0,1]:
                     # igmp-snooping group-limit 15 vlan <if_uvlan>
                     # igmp-snooping group-policy 3500 vlan <if_uvlan>
-                    IF_CFG += ' igmp-snooping group-limit 15 vlan %s\n\n' % port.u_vlan
+                    IF_CFG += ' igmp-snooping group-limit 15 vlan %s\n' % port.u_vlan
                     IF_CFG += ' igmp-snooping group-policy 3500 vlan %s\n' % port.u_vlan
+                IF_CFG += ' undo lldp enable\n'
+                #IF_CFG += ' stp enable\n'
                 IF_CFG += ' mac-address trap notification all\n'
                 IF_CFG += ' jumboframe enable 10240\n'
                 IF_CFG += ' trust 8021p\n'
@@ -1601,7 +1601,7 @@ def huawei_cfg(access_switch):
                 IF_CFG += ' storm-control enable trap\n'
                 IF_CFG += ' storm-control enable log\n'
             #UPSREAM_IF
-            elif port in access_switch.uplink_ports():
+            elif port in access_switch.backbon_ports():
                 # port link-type trunk
                 # port trunk allow-pass vlan 99 101 to 113 1001 to 1700 3701 to 3713 4024
                 # undo lldp tlv-enable dot1-tlv protocol-vlan-id
@@ -1616,6 +1616,7 @@ def huawei_cfg(access_switch):
                 IF_CFG += ' port link-type trunk\n'
                 for vlan_interval in used_vlans_intervals.split(',') :
                     IF_CFG += ' port trunk allow-pass vlan %s\n' % vlan_interval.replace('-',' to ')
+                IF_CFG += ' traffic-policy IPOE inbound\n'
                 IF_CFG += ' undo lldp tlv-enable dot1-tlv protocol-vlan-id\n'
                 IF_CFG += ' lldp tlv-enable dot1-tlv protocol-identity\n'
                 IF_CFG += ' undo lldp tlv-enable med-tlv all\n'
@@ -1623,7 +1624,6 @@ def huawei_cfg(access_switch):
                 IF_CFG += ' jumboframe enable 10240\n'
                 IF_CFG += ' trust 8021p\n'
                 IF_CFG += ' qos schedule-profile ERTH\n'
-                IF_CFG += ' traffic-policy IPOE inbound\n'
             elif port in access_switch.ip_ports():
                 IF_CFG += ' undo port hybrid vlan 1\n'
                 if port.u_vlan not in [0,1]:
