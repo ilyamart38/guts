@@ -98,6 +98,7 @@ class MGS(models.Model):
     class Meta:
         verbose_name = "МГС"
         verbose_name_plural = "МГС"
+        ordering = ['mgs_num',]
 
     mgs_num = models.IntegerField(default=0, unique=True)
     # Адрес МГС
@@ -111,7 +112,7 @@ class MGS(models.Model):
     last_update = models.DateTimeField(default=timezone.now, verbose_name='Время последнего обновления данных по МГС',                                                                                            editable=False)
     # Представление МГС
     def __str__(self):
-        return "МГС-%s" % self.mgs_num
+        return "МГС-%s (%s)" % (self.mgs_num, self.address)
 
     # Процедура обновления счетчиков по МГС
     def update_counts(self):
@@ -238,6 +239,7 @@ class THREAD(models.Model):
     num_in_campus = models.IntegerField(default = 1)
     outvlan = models.IntegerField(default=1, verbose_name='Внешний vlan', validators=[validator_vid, ])
     mapvlan = models.IntegerField(default=1, verbose_name='Map-vlan', validators=[validator_vid, ])
+    vlans = models.CharField(max_length = 1000, blank =True)
 
     def save(self, *args, **kwargs):
         # Если происходит создание новой нитки, то сразу после сохранения нитки, создаем подсеть для нитки, 
