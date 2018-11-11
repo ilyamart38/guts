@@ -1574,7 +1574,8 @@ def huawei_cfg(access_switch):
             if port in access_switch.pppoe_ports():
                 #IF_CFG += ' undo port hybrid vlan 1\n'
                 if port.u_vlan not in [0,1]:
-                    used_pppoe_vlans.append(port.u_vlan)
+                    if port.u_vlan not in used_pppoe_vlans:
+                        used_pppoe_vlans.append(port.u_vlan)
                     # port hybrid untagged vlan <if_uvlan> 4024
                     # port hybrid pvid vlan <if_uvlan>
                     IF_CFG += ' port hybrid pvid vlan %s\n' % port.u_vlan
