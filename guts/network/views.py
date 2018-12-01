@@ -473,11 +473,7 @@ class AccessSwitchView(LoginRequiredMixin, generic.DetailView):
         #    print(dir(form['port_type']))
         if form_set.is_valid():
             for form in form_set:
-                form_type = int(form['port_type'].value())
-                # сохраняем только информацию о портах отличных от аплинков и портов расширения
-                if form_type not in (0, 1):
-                    form.save()
-                    
+                form.save()
             # после сохранения всех настроек на портах, необходимо обновить список используемых вланов в нитке и список вланов на магистральных портах в нитке
             thread = ACCESS_SWITCH.objects.get(id = access_switch_id).access_node.thread
             thread.save()
