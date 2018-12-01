@@ -425,13 +425,14 @@ class NewAccessSwitchInNode(LoginRequiredMixin, CreateView):
         if not ACCESS_SWITCH.objects.filter(
                     access_node__in = ACCESS_NODE.objects.filter(
                         thread = access_node.thread
-                    ), stp_root = True
+                    ), 
+                    stp_root = True
                 ):
-                    print("stp_root - OK")
+        #            print("stp_root - OK")
                     initial['stp_root'] = True
                     
-        else:
-                    print("stp_root - NE OK")
+        #else:
+        #            print("stp_root - NE OK")
         initial['access_node'] = access_node_id
         
         return initial
@@ -466,46 +467,28 @@ class AccessSwitchView(LoginRequiredMixin, generic.DetailView):
         return context
     def post(self, request, *args, **kwargs):
         access_switch_id = self.kwargs['pk']
+        access_switch = ACCESS_SWITCH.objects.get(id=access_switch_id)
         form_set = Ports_Of_Acess_Switch_Formset(request.POST)
+        #for form in form_set:
+        #    print(dir(form['port_type']))
         if form_set.is_valid():
-            #print('OK')
             for form in form_set:
                 form_type = int(form['port_type'].value())
+                # сохраняем только информацию о портах отличных от аплинков и портов расширения
                 if form_type not in (0, 1):
                     form.save()
-                else:
-                    id = form['id'].value()
-                    if PORT_OF_ACCESS_SWITCH.objects.get(id=id).port_type.id != form_type:
-                        print(PORT_OF_ACCESS_SWITCH.objects.get(id=id).port_type.id, form['port_type'].value())
-                        form.save()
                     
-            ## после сохранения всех настроек на портах, необходимо обновить настройки всех магистральных портов в нитке
-            #uplink_ports_in_thread = PORT_OF_ACCESS_SWITCH.objects.filter(
-            #    port_type__in = PORT_TYPE.objects.filter(id__in = (0,1)),
-            #    access_switch__in = ACCESS_SWITCH.objects.filter(
-            #        access_node__in = ACCESS_NODE.objects.filter(thread = ACCESS_SWITCH.objects.get(id = access_switch_id).access_node.thread)
-            #    )
-            #)
-            ##print(uplink_ports_in_thread)
-            #for port in uplink_ports_in_thread:
-            #    port.save_uplink()
-            ##При любых изменениях в настройках коммутатора стираем значение cfg_file, кроме случая когда мы задаем cfg_file
-            #access_switch = ACCESS_SWITCH.objects.get(id=access_switch_id)
-            #access_switch.cfg_file = ''
-            #access_switch.save()
+            # после сохранения всех настроек на портах, необходимо обновить список используемых вланов в нитке и список вланов на магистральных портах в нитке
+            thread = ACCESS_SWITCH.objects.get(id = access_switch_id).access_node.thread
+            thread.save()
             return redirect('access_switch', pk=access_switch_id)
         else:
-            #print('NE OK!!!')
-            #print('REQUEST', request.POST)
-            #for form in form_set:
-            #    print('FORM', form)
-            #    print('IS_VALID', form.is_valid())
-            #    print('FORM_ERRORS', form.errors)
-                
             self.object = self.get_object()
             context = super().get_context_data(**kwargs)
             context['form_set'] = form_set
-            #print('FORM_SET_ERROR_COUNT', form_set.total_error_count())
+            context['access_switch'] = access_switch
+            context['mgs_list'] = MGS.objects.all()
+            context['port_types'] = PORT_TYPE.objects.all()
             return self.render_to_response(context=context)
 
 class AccessSwitchDelete(DeleteView):

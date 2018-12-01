@@ -78,11 +78,11 @@
                         {{ form.access_switch.as_hidden }}
                     </td>
                     <td {% for port_type in port_types %}
-                                {% if port_type.id == form.port_type.value %} style='background-color: {{ port_type.color }};'{% endif %} 
+                                {% if port_type.id|stringformat:"s" == form.port_type.value|stringformat:"s" %} style='background-color: {{ port_type.color }};'{% endif %} 
                         {% endfor %} >
                         <select name='{{ form.port_type.html_name }}' >
                             {% for port_type in port_types %}
-                                <option value='{{ port_type.id }}' {% if port_type.id == form.port_type.value %} selected {% endif %} style='background-color: {{ port_type.color }};'> {{ port_type.title }} </option>
+                                <option value='{{ port_type.id }}' {% if port_type.id|stringformat:"s" == form.port_type.value|stringformat:"s" %} selected {% endif %} style='background-color: {{ port_type.color }};'> {{ port_type.id }}: {{ port_type.title }} </option>
                             {% endfor %}
                         </select>
                     </td>

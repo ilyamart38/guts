@@ -26,20 +26,20 @@ class New_Access_Switch_Form(forms.ModelForm):
         model = ACCESS_SWITCH
         fields = ('access_node', 'sw_model', 'ip')
 
-class Ports_Of_Acess_Switch_Form(forms.ModelForm):
-    class Meta:
-        model = PORT_OF_ACCESS_SWITCH
-        fields = (
-                'access_switch',
-                'num_in_switch', 
-                'description', 
-                'u_vlan', 
-                't_vlans', 
-                #'non_pppoe', 
-                #'is_signal', 
-                #'is_upstream', 
-                #'is_bad'
-                )
+#class Ports_Of_Acess_Switch_Form(forms.ModelForm):
+#    class Meta:
+#        model = PORT_OF_ACCESS_SWITCH
+#        fields = (
+#                'access_switch',
+#                'num_in_switch', 
+#                'description', 
+#                'u_vlan', 
+#                't_vlans', 
+#                #'non_pppoe', 
+#                #'is_signal', 
+#                #'is_upstream', 
+#                #'is_bad'
+#                )
 
 Ports_Of_Acess_Switch_Formset = forms.modelformset_factory(
             PORT_OF_ACCESS_SWITCH,

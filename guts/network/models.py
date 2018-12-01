@@ -245,8 +245,6 @@ class THREAD(models.Model):
         # Если происходит создание новой нитки, то сразу после сохранения нитки, создаем подсеть для нитки, 
         # если номера мгс/мс/кампуса/нитки соответствуют концепции, и если расчитаная подсеть еще не занята
         if THREAD.objects.filter(id=self.id).count() == 0:
-            super(THREAD, self).save(*args, **kwargs)
-            
             thread_num = self.num_in_campus
             campus_num = self.campus.num_in_ms
             ms_num = self.campus.ms.num_in_mgs
@@ -260,10 +258,12 @@ class THREAD(models.Model):
                     print('Подсеть %s уже занята!' % network)
             else:
                 print('Нитка %s.%s.%s-%s не соответствует концепции!' % (mgs_num, ms_num, campus_num, thread_num))
-        # Иначе просто сохраняем изменения
-        else:
-            super(THREAD, self).save(*args, **kwargs)
         
+        # обновляем список вланов в нитке
+        self.update_vlans()
+        
+        # Сохраняем нитку
+        super(THREAD, self).save(*args, **kwargs)
         # Обновляем счетчики по кампусу
         self.campus.update_counts()
 
@@ -276,39 +276,51 @@ class THREAD(models.Model):
         return reverse('campus', args=[str(self.campus.id)])
     
     # Процедура определения списка вланов используемого в нитке
-    def used_vlans(self):
-        used_vlans = {}
+    def update_vlans(self):
+        # Процедура для обновления списка используемых вланов
+        # и информацию о них на магистральных портах
+
+        # получаем список нетегированных вланов на клиентских портах в виде списка
+        thread_uvlans = PORT_OF_ACCESS_SWITCH.objects.filter(
+            access_switch__in = ACCESS_SWITCH.objects.filter(
+                access_node__in =  ACCESS_NODE.objects.filter(thread = self)
+                ),
+            port_type__in = PORT_TYPE.objects.filter(
+                connection_type__in = [3,4]
+                )            
+            ).values_list('u_vlan', flat=True)
+        # преобразуем список вланов в строковые диапазоны
+        thread_uvlans_interval  = net_lib.arr_to_interval(thread_uvlans)
+        # получаем список тегированных вланов на клиентских портах в виде списка диапазонов
+        thread_tvlans = PORT_OF_ACCESS_SWITCH.objects.filter(
+            access_switch__in = ACCESS_SWITCH.objects.filter(
+                access_node__in =  ACCESS_NODE.objects.filter(thread = self)
+                ),
+            port_type__in = PORT_TYPE.objects.filter(
+                connection_type__in = [3,4]
+                )            
+            ).values_list('t_vlans', flat=True)
+        # Объединяем диапазоны в один общий
+        thread_tvlans_interval = ','.join(thread_tvlans)
+        # Объединяем полученные диапазоны, c PERMANENT_VLANS и вычисляем общий
+        thread_vlans = '%s,%s,%s' % (thread_uvlans_interval, thread_tvlans_interval, GUTS_CONSTANTS['PERMANENT_VLANS'])
+        thread_vlans_list = net_lib.interval_to_arr(thread_vlans)
+        thread_vlans = net_lib.arr_to_interval(thread_vlans_list)
+        # Сохраняем полученные данные о вланах нитки
+        self.vlans = thread_vlans
+        print ('thread_vlans:', thread_vlans)
         
-        # список клиентских портов на всех коммутаторах в нитке:
-        ports_in_thread = PORT_OF_ACCESS_SWITCH.objects.filter(
-                                                        access_switch__in = ACCESS_SWITCH.objects.filter(
-                                                                                                  access_node__in =  ACCESS_NODE.objects.filter(thread = self)
-                                                                                                  ),
-                                                        port_type__in = PORT_TYPE.objects.filter(
-                                                                                          connection_type__in = [3,4]
-                                                                                          )
-                                                        )
-        # перебераем каждый порт
-        for port in ports_in_thread:
-            ## изучаем вланы на всех портах кроме аплинков и распред.портов!
-            #if port.port_type.id not in (0, 1):
-                # запоминаем u_vlan влан
-                if port.u_vlan != 0:
-                    if port.u_vlan not in used_vlans:
-                        used_vlans[port.u_vlan] = {}
-                        used_vlans[port.u_vlan]['used_in'] = []
-                    used_vlans[port.u_vlan]['used_in'].append(" %s [%s]" % (port.access_switch, port.port_name))
-                # тоже самое делаем для всех t_vlan
-                for t_vlan in net_lib.interval_to_arr(port.t_vlans):
-                    # запоминаем t_vlan влан
-                    if t_vlan != 0:
-                        if t_vlan not in used_vlans:
-                            used_vlans[t_vlan] = {}
-                            used_vlans[t_vlan]['used_in'] = []
-                        used_vlans[t_vlan]['used_in'].append(" %s [%s]" % (port.access_switch, port.port_name))
-        #print('>>>>>>>>>>', used_vlans)
-        #print(net_lib.arr_to_interval(used_vlans.keys()))
-        return used_vlans
+        # делаем выборку всех магистральных портов нитке
+        uplink_ports = PORT_OF_ACCESS_SWITCH.objects.filter(
+            access_switch__in = ACCESS_SWITCH.objects.filter(
+                access_node__in =  ACCESS_NODE.objects.filter(thread = self)
+                ),
+            port_type__in = PORT_TYPE.objects.filter(
+                connection_type__in = [0,1]
+                )            
+            )
+        uplink_ports.update(t_vlans = thread_vlans)
+        return thread_vlans
 
     def ip_address(self):
         list_ip = []
@@ -742,7 +754,7 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
         
     access_switch = models.ForeignKey(ACCESS_SWITCH, on_delete = models.CASCADE)
     num_in_switch = models.IntegerField(default = 0)
-    description = models.CharField(max_length = 100)
+    description = models.CharField(max_length = 100, blank=True, null=True)
     port_name = models.CharField(max_length = 100)
     port_type = models.ForeignKey(PORT_TYPE, on_delete = models.SET_NULL, blank=True, null=True)
     
@@ -752,42 +764,56 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
         return '%s (%s)' % (self.access_switch, self.num_in_switch)
         
     def clean(self):
-        if self.u_vlan < 0:
+        u_vlan = self.u_vlan
+        if u_vlan < 0:
             raise ValidationError('Значение Untag-vlan не может быть отрицательным!!!')
-        if self.u_vlan > 4094:
+        if u_vlan > 4094:
             raise ValidationError('Значение Untag-vlan не может быть большим чем 4094!!!')
-
+        # Диапазон тегированных вланов должен соответствовать списку диапазонов числовых значений 
+        # учитывая возможность изменения чесел от 2 до 4094
+        t_vlans = self.t_vlans
+        if t_vlans != '':
+            for elem_interval in t_vlans.split(','):
+                if elem_interval != '':
+                    petern_interval = "^(([1-9])|([1-9][0-9])|([1-9][0-9][0-9]))|((([1-9])|([1-9][0-9])|([1-9][0-9][0-9]))-(([1-9])|([1-9][0-9])|([1-9][0-9][0-9])))$"
+                    if re.search(petern_interval, elem_interval) is not None:
+                        tmp = elem_interval.split('-')
+                        start_interval = int(tmp[0])
+                        if start_interval < 2 or start_interval > 4094:
+                            raise ValidationError("В интервале <%s> используется не допустимое значение <%s> vid!" % (elem_interval, start_interval))
+                        if len(tmp)>1:
+                            end_interval = int(tmp[1])
+                            if end_interval < 2 or end_interval > 4094:
+                                raise ValidationError("В интервале <%s> используется не допустимое значение <%s> vid!" % (elem_interval, end_interval))
+                            if end_interval < start_interval:
+                                raise ValidationError("В интервале <%s> не корректно указаны границы!" % elem_interval)
+                    else:
+                        raise ValidationError("Элемент интервала %s не корректен!!!" % elem_interval)
+            if u_vlan in net_lib.interval_to_arr(t_vlans):
+                raise ValidationError("Значение Untag-vlan не должно попадать в диапазон Tag vlans!!!")
+        
     def save(self, *args, **kwargs):
         # Если происходит создание нового порта, то просто выставляем все значения в соответствии с данными модели коммутатора
         if PORT_OF_ACCESS_SWITCH.objects.filter(id=self.id).count() == 0:
             type_id = int(self.access_switch.sw_model.ports_types.split(',')[self.num_in_switch-1])
-            self.description = PORT_TYPE.objects.get(id=type_id).default_description
             self.port_type = PORT_TYPE.objects.get(id=type_id)
+            self.description = self.port_type.default_description
             self.port_name = self.access_switch.sw_model.ports_names.split(',')[self.num_in_switch-1]
             #вычисляем для порта untag-влан, если это требуеся
             self.default_u_vlan()
             # только для аплинков и распределительных портов 
             if self.port_type.connection_type in (0, 1):
-                # то меняем значение u_vlan на 1, а t_vlans на список вланов в нитке, к которой относится коммутатор + permanent_vlans
-                self.description = self.port_type.default_description
-                self.default_u_vlan()
                 # а значение t_vlans на список всех используемых в нитке вланов
-                vlans_in_thread = self.access_switch.access_node.thread.used_vlans()
-                vlans = vlans_in_thread.keys()
-                t_vlans=list(vlans)
-                t_vlans += net_lib.interval_to_arr(GUTS_CONSTANTS['PERMANENT_VLANS'])
-                # Добавляем влан управления
-                t_vlans.append(int(GUTS_CONSTANTS['MGMT_VLAN']))
-                self.t_vlans = net_lib.arr_to_interval(t_vlans)
+                self.t_vlans = self.access_switch.access_node.thread.vlans
             super(PORT_OF_ACCESS_SWITCH, self).save(*args, **kwargs)
         
         # если происходит изменение настроек сущеcтвующего порта то следуем определенным правилам
         else:
             # порт до изменений
             current_port = PORT_OF_ACCESS_SWITCH.objects.get(id=self.id)
+            need_update = False         # переменная по которой мы определяем необходимость обновления аплинков
             # Если что-то поменялось в порту, то затираем информацию о файле конфигурации коммутатора, 
             # что говорит о том что при необходимости требуется повторно генерировать конфиг
-            need_update = False         # переменная по которой мы определяем необходимость обновления аплинков
             # 1. проверяем изменился ли тип порта
             if self.port_type != current_port.port_type:
                 print('>>>',current_port.port_type,'->',self.port_type )
@@ -797,27 +823,17 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
                     self.description = self.port_type.default_description
                     self.default_u_vlan()
                     # а значение t_vlans на список всех используемых в нитке вланов
-                    vlans_in_thread = self.access_switch.access_node.thread.used_vlans()
-                    vlans = vlans_in_thread.keys()
-                    t_vlans=list(vlans)
-                    t_vlans += net_lib.interval_to_arr(GUTS_CONSTANTS['PERMANENT_VLANS'])
-                    self.t_vlans = net_lib.arr_to_interval(t_vlans)
+                    self.t_vlans = self.access_switch.access_node.thread.vlans
                     need_update = True
                 # Если новое значение соответствует клиентскому pppoe-порту
                 elif self.port_type.connection_type == 3:
                     # В любом случае убираем все тегированные вланы с порта
                     self.t_vlans = ''
-                    # Если не изменили описание порта, то выставляем значение поумолчению
-                    if self.description == current_port.description:
-                        self.description = self.port_type.default_description
                     # Если не изменился клиентский влан, то выставляем влан поумолчанию
                     if self.u_vlan == current_port.u_vlan:
                         self.default_u_vlan()
                 # Если новое значение соответствует прочему клиентскому (не pppoe) порту
                 elif self.port_type.connection_type == 4:
-                    # Если не изменили описание порта, то выставляем значение поумолчению
-                    if self.description == current_port.description:
-                        self.description = self.port_type.default_description
                     # Значение вланов оставляем без изменений, кроме случая когда до изменений порт являлся аплинком
                     if current_port.port_type.connection_type in [0, 1]:
                         self.u_vlan = 0
@@ -825,71 +841,23 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
                 # Если новое значение соответствует порту какого-либо сигнализатора, или неисправного порта
                 elif self.port_type.connection_type in (5, 99):
                     # Если не изменили описание порта, то выставляем значение поумолчению
-                    if self.description == current_port.description:
+                    if self.description in (current_port.description, ''):
                         self.description = self.port_type.default_description
                     # Убираем все вланы с портов
                     self.u_vlan = 0
                     self.t_vlans = ''
-            #2. если изменились настройки вланов то необходимо обновить настройки всех магистральных портов в нитке
-            if self.port_type.connection_type in (3,4):
-                if self.u_vlan != current_port.u_vlan or self.t_vlans != current_port.t_vlans:
-                    print('Chenge vlan ', self)
-                    # обновление магистральных портов потребуется только в случае появления нового влана
-                    port_vlans = []
-                    port_t_vlans = net_lib.interval_to_arr(self.t_vlans)
-                    if port_t_vlans:
-                        port_vlans += port_t_vlans
-                    port_vlans.append(self.u_vlan)
-                    vlans_in_thread = self.access_switch.access_node.thread.used_vlans()
-                    PERMANENT_VLANS = net_lib.interval_to_arr(GUTS_CONSTANTS['PERMANENT_VLANS'])
-                    for vlan in port_vlans:
-                        print('>>', vlan)
-                        if vlan != 0:
-                            if vlan not in vlans_in_thread:
-                                if vlan not in PERMANENT_VLANS:
-                                    print('not in permanent')
-                                    # если нашли хотя бы один новы влан то решаемся обновлять аплинки
-                                    print('%s not in thread_vlans' % vlan)
-                                    need_update = True
-                                    break
-                            else:
-                                print(vlans_in_thread)
-            
+                # Если изначально дескрипшин порта соответствовал дефолтному, то меняем на дефолтный соответствующий новому типу порта, кроме случая когда порт стал сигнальным
+                if current_port.description in (current_port.port_type.default_description, ''):
+                    self.description = self.port_type.default_description
+            # если передан пустой дескрипшин, меняем его на дефолтный в соответствии с типом порта
+            if self.description == None:
+                self.description = self.port_type.default_description
+            #2. считаем что изменение вланов невозможно на сигнальных и неисправных портах поэтому для таких портов
+            #   жестко задаем значения
+            if self.port_type.connection_type in (5,99):
+                self.u_vlan = 0
+                self.t_vlans = ''
             super(PORT_OF_ACCESS_SWITCH, self).save(*args, **kwargs)
-            
-            if need_update:
-                    # выбераем все магистральные порты в нитке
-                    uplink_ports_in_thread = PORT_OF_ACCESS_SWITCH.objects.filter(
-                                                port_type__in = PORT_TYPE.objects.filter(
-                                                                    connection_type__in = (0,1)
-                                                                    ),
-                                                access_switch__in = ACCESS_SWITCH.objects.filter(
-                                                                    access_node__in = ACCESS_NODE.objects.filter(
-                                                                                        thread = self.access_switch.access_node.thread
-                                                                                        )
-                                                                    )
-                                                )
-                    #print(uplink_ports_in_thread)
-                    for port in uplink_ports_in_thread:
-                        port.save_uplink()
-
-    # процедура специально для обновления аплинков и распред портов
-    def save_uplink(self):
-        if self.port_type.connection_type in (0, 1):
-            print(self)
-            # то меняем значение u_vlan на 1, а t_vlans на список вланов в нитке, к которой относится коммутатора
-            self.description = self.port_type.default_description
-            self.default_u_vlan()
-            # а значение t_vlans на список всех используемых в нитке вланов
-            vlans_in_thread = self.access_switch.access_node.thread.used_vlans()
-            vlans = net_lib.interval_to_arr(GUTS_CONSTANTS['PERMANENT_VLANS'])
-            for vlan in vlans_in_thread.keys():
-                if vlan not in vlans:
-                    vlans.append(vlan)
-            vlans.append(int(GUTS_CONSTANTS['MGMT_VLAN']))
-            print('t_VLANS >>> ', net_lib.arr_to_interval(vlans))
-            self.t_vlans = net_lib.arr_to_interval(vlans)
-        self.save()
         
         
     def default_u_vlan(self):
