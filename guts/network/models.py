@@ -302,13 +302,13 @@ class THREAD(models.Model):
             ).values_list('t_vlans', flat=True)
         # Объединяем диапазоны в один общий
         thread_tvlans_interval = ','.join(thread_tvlans)
-        # Объединяем полученные диапазоны, c PERMANENT_VLANS и вычисляем общий
-        thread_vlans = '%s,%s,%s' % (thread_uvlans_interval, thread_tvlans_interval, GUTS_CONSTANTS['PERMANENT_VLANS'])
+        # Объединяем полученные диапазоны, c PERMANENT_VLANS и MGMT_VLAN и вычисляем общий
+        thread_vlans = '%s,%s,%s,%s' % (thread_uvlans_interval, thread_tvlans_interval, GUTS_CONSTANTS['PERMANENT_VLANS'], GUTS_CONSTANTS['MGMT_VLAN'])
         thread_vlans_list = net_lib.interval_to_arr(thread_vlans)
         thread_vlans = net_lib.arr_to_interval(thread_vlans_list)
         # Сохраняем полученные данные о вланах нитки
         self.vlans = thread_vlans
-        print ('thread_vlans:', thread_vlans)
+        #print ('thread_vlans:', thread_vlans)
         
         # делаем выборку всех магистральных портов нитке
         uplink_ports = PORT_OF_ACCESS_SWITCH.objects.filter(
