@@ -13,6 +13,7 @@ import os
 #from datetime import datetime
 from django.utils import timezone
 from . import net_lib
+from simple_history.models import HistoricalRecords
 
 # Валидатор корректности записи подсети IPv4 (0-255).(0-255).(0-255).(0-255)/(0-32)
 def validator_net_addr(network):
@@ -453,6 +454,7 @@ class SW_MODEL(models.Model):
     ports_types = models.CharField(max_length = 200, blank = True, verbose_name = 'Типы портов по умолчанию', help_text = create_help_text_for_type_ports())
     #cfg_template = models.CharField(max_length = 100, blank = True)
     cfg_template = models.FileField(upload_to = 'cfg_templates', verbose_name = 'Шаблон конфигурации', blank=True)
+    history = HistoricalRecords()
     
     cfg_download_commands = models.TextField(blank = True, verbose_name = 'Описание процесса загрузки конфигурации')
     # Представление модели коммутатора
@@ -521,6 +523,7 @@ class ACCESS_SWITCH(models.Model):
     mac = models.CharField(max_length = 17, blank = True, verbose_name = 'mac-адрес')
     sn =  models.CharField(max_length = 100, blank = True, verbose_name = 'Серийный номер')
     cfg_file = models.FileField(upload_to = 'cfg_switches')
+    history = HistoricalRecords()
     
     
     def clean(self):
@@ -760,6 +763,8 @@ class PORT_OF_ACCESS_SWITCH(models.Model):
     
     u_vlan = models.IntegerField(default = 0, verbose_name = 'Untag-vlan/PVID')
     t_vlans = models.CharField(max_length = 1000, blank =True)
+    history = HistoricalRecords()
+    
     def __str__(self):
         return '%s (%s)' % (self.access_switch, self.num_in_switch)
         

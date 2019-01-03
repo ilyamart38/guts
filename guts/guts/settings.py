@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'ipoe.apps.IpoeConfig',
     'l2.apps.L2Config',
     'registration',
+    'simple_history',
 ]
 
 MIDDLEWARE = [
@@ -56,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'guts.urls'
@@ -98,7 +100,10 @@ DATABASES = {
         'PASSWORD': 'Per$pektiv@',
         'HOST': '127.0.0.1',
 #        'PORT': '5432',
-    }
+    },
+    'OPTIONS': {
+        'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+    },
 }
 
 
