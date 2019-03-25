@@ -1,0 +1,9 @@
+Создаём бекап и сразу его архивируем
+mysqldump -u root -p guts_2.0 | gzip > db.sql.gz
+
+Заливаем архив бекапа в базу
+gunzip < /path/to/outputfile.sql.gz | mysql -u root -p guts_2.0
+или так
+zcat /path/to/outputfile.sql.gz | mysql -u root -p guts_2.0
+
+
